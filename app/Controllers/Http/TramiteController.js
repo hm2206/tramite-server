@@ -17,12 +17,11 @@ class TramiteController {
 
     store = async ({ request }) => {
         await validation(validate, request.all(), {
-            person_id: "required",
-            document_number: 'required|min:4|max:255',
+            dependencia_origen_id: 'required',
             tramite_type_id: 'required|max:11',
+            document_number: 'required|min:4|max:255',
             folio_count: 'required|min:1|max:10',
             asunto: 'required|min:4',
-            dependencia_origen_id: 'required'
         });
         // obtener tramite documento
         let type = await TramiteType.find(request.input('tramite_type_id'));
@@ -34,7 +33,7 @@ class TramiteController {
             user_id: request.$auth.id,
             entity_id: request._entity.id,
             dependencia_id: request._dependencia.id,
-            person_id: request.input('person_id'),
+            person_id: request.$auth.person_id,
             slug,
             document_number: request.input('document_number'),
             tramite_type_id: request.input('tramite_type_id'),
