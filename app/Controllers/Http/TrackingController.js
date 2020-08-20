@@ -6,8 +6,60 @@ const { validate } = use('Validator');
 const uid = require('uid');
 const Helpers = use('Helpers');
 const { LINK } = require('../../../utils');
+const Collect = require('collect.js');
 
 class TrackingController {
+
+    index = async ({ request }) => {
+        let { page, status } = request.all();
+        let tracking = Tracking.query()
+            .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
+            .join('tramite_types as type', 'type.id', 'tra.tramite_type_id')
+            .where('tra.entity_id', request._entity.id)
+            .where('dependencia_destino_id', request._dependencia.id);
+        // filtros
+        if (status) tracking.where('status', status);
+        // get paginate
+        tracking = await tracking.select(
+                'trackings.id', 'tra.slug', 'tra.document_number', 
+                'type.description', 'tra.person_id', 'tra.dependencia_origen_id',
+                'trackings.status', 'trackings.parent', 'tra.created_at',
+                'trackings.dependencia_destino_id', 'tra.entity_id'
+            ).paginate(page || 1, 20);
+        // to JSON
+        tracking = await tracking.toJSON();
+        // get dependencias origen
+        let dependenciaIds = Collect(tracking.data).pluck('dependencia_origen_id').all().join('&ids[]=');
+        let origen = await request.api_authentication.get(`dependencia?ids[]=${dependenciaIds}`)
+            .then(res => res.data)
+            .catch(err => ({
+                success: false,
+                status: err.status || 501,
+                dependencia: { }
+            }));
+        // collect origen
+        origen = Collect(origen.dependencia.data || []);
+        // get person
+        let personIds = Collect(tracking.data).pluck('person_id').all().join('&ids[]=');
+        let person = await request.api_authentication.get(`find_people?id[]=${personIds}`)
+            .then(res => res.data)
+            .catch(err => ([]));
+        // collect person
+        person = Collect(person || []);
+        // add meta datos to tracking
+        tracking.data.map(tra => {
+            tra.dependencia_origen = origen.where('id', tra.dependencia_origen_id).first() || {};
+            tra.person = person.where('id', tra.person_id).first() || {};
+            return tra;
+        });
+        // response
+        return {
+            success: true,
+            status: 201,
+            code: 'RES_TRACKING',
+            tracking
+        }
+    }
 
     /**
      * Derivar, Anular, Aceptar, Rechazar y Finalizar el tramite en el tracking
@@ -106,7 +158,6 @@ class TrackingController {
             .where('trackings.current', 1)
             .where('trackings.parent', parent)
             .select('trackings.*')
-            .debug(['enabled'])
             .first();
         // validar tracking
         if (!tracking) throw new Error('No se encontró el tracking del tramite')

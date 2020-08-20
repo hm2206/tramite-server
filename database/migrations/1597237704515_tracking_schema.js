@@ -9,8 +9,8 @@ class TrackingSchema extends Schema {
       table.increments()
       table.string('description');
       table.string('file');
-      table.string('user_id').notNullable();
-      table.string('user_destino_id');
+      table.integer('user_id');
+      table.integer('user_destino_id');
       table.integer('tramite_id').notNullable();
       table.integer('dependencia_origen_id').notNullable();
       table.integer('dependencia_destino_id').notNullable();
