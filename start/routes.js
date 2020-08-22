@@ -19,6 +19,9 @@ addGroup(Route.group(() => {
   Route.get('/tracking', 'TrackingController.index').middleware(['allow:TrackingController.index', 'jwt', 'entityId', 'dependenciaId']);
   Route.post('/tracking/:id/next', 'TrackingController.next').middleware(['allow:TrackingController.next', 'jwt', 'entityId', 'dependenciaId']);
 
+  // Ruta de la bandeja de entrada
+  Route.get('/my_tray', 'TrackingController.my_tray').middleware(['allow:TrackingController.my_tray', 'jwt', 'entityId', 'dependenciaId']);
+
   // Ruta Publica de Tramite
   Route.post('/public/tramite', 'public/TramitePublicController.store').middleware(['allow:public/TramitePublicController.store']);
   Route.get('/public/tramite/:slug', 'public/TramitePublicController.show').middleware(['allow:public/TramitePublicController.show']);

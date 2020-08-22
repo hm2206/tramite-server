@@ -17,7 +17,6 @@ class TramiteController {
 
     store = async ({ request }) => {
         await validation(validate, request.all(), {
-            dependencia_origen_id: 'required',
             tramite_type_id: 'required|max:11',
             document_number: 'required|min:4|max:255',
             folio_count: 'required|min:1|max:10',
@@ -40,7 +39,7 @@ class TramiteController {
             folio_count: request.input('folio_count'),
             asunto: request.input('asunto'),
             file: request.input('file', '/file'),
-            dependencia_origen_id: request.input('dependencia_origen_id')
+            dependencia_origen_id: request._dependencia.id
         }
         // guardar file
         let file = await Storage.saveFile(request, 'file', {

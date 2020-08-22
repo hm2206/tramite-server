@@ -164,7 +164,7 @@ class TramitePublicController {
         let tracking = await Tracking.query()
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .where('tra.slug', params.slug)
-            .whereIn('trackings.status', ['ACEPTADO', 'DERIVADO', 'RECHAZADO', 'FINALIZADO'])
+            .whereIn('trackings.status', ['ACEPTADO', 'DERIVADO', 'RESPONDIDO', 'RECHAZADO', 'FINALIZADO'])
             .select('trackings.*')
             .paginate(page || 1, 20);
         // parse json 
@@ -180,9 +180,19 @@ class TramitePublicController {
             }));
         // collect dependencia
         destino = collect(destino.dependencia.data || []);
-        // add dependencia destino
+        // obtener users person
+        let userIds = collect(tracking.data).pluck('user_id').all().join('&ids[]=');
+        let user = await request.api_authentication.get(`user?ids[]=${userIds}`) 
+            .then(res => res.data)
+            .catch(err => ({
+                data: []
+            }));
+        // collect user
+        user = collect(user.data || []);
+        // add dependencia destino y user
         tracking.data.map(tra => {
             tra.dependencia_destino = destino.where('id', tra.dependencia_destino_id).first() || {};
+            tra.user = user.where('id', tra.user_id).first() || {};
             tra.file = tra.file ? URL(tra.file) : null;
             return tra;
         });
