@@ -10,11 +10,6 @@ const { LINK } = require('../../../utils')
 
 class TramiteController {
 
-    index = async ({ request }) => {
-        let { page, query_search } = request.all();
-        let tramite = Tramite.query();
-    }
-
     store = async ({ request }) => {
         await validation(validate, request.all(), {
             tramite_type_id: 'required|max:11',

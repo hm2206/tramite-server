@@ -12,6 +12,10 @@ const addGroup = (group) => {
 // ruta v1
 addGroup(Route.group(() => {
 
+  // status del tramite
+  Route.get('/status/tramite_interno', 'StatusController.tramiteInterno').middleware(['allow:StatusController.tramiteInterno', 'jwt', 'entityId', 'dependenciaId']);
+  Route.get('/status/bandeja', 'StatusController.bandeja').middleware(['allow:StatusController.bandeja', 'jwt', 'entityId', 'dependenciaId']);
+
   // Ruta de Tramite
   Route.post('/tramite', 'TramiteController.store').middleware(['allow:TramiteController.store', 'jwt', 'entityId', 'dependenciaId']);
 
