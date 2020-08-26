@@ -5,7 +5,7 @@ const { validation, ValidatorError, Storage } = require('validator-error-adonis'
 const { validate } = use('Validator');
 const uid = require('uid');
 const Helpers = use('Helpers');
-const { LINK } = require('../../../utils');
+const { LINK, URL } = require('../../../utils');
 const Collect = require('collect.js');
 
 class TrackingController {
@@ -40,7 +40,7 @@ class TrackingController {
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .join('tramite_types as type', 'type.id', 'tra.tramite_type_id')
             .where('tra.entity_id', request._entity.id)
-            .where('dependencia_destino_id', request._dependencia.id)
+            .where('trackings.dependencia_id', request._dependencia.id)
         // filtros
         if (status) tracking.where('status', status);
         if (user_id) tracking.where('trackings.user_destino_id', user_id)
@@ -49,11 +49,20 @@ class TrackingController {
         tracking = await tracking.select(
                 'trackings.id', 'tra.slug', 'tra.document_number', 
                 'type.description', 'tra.person_id', 'tra.dependencia_origen_id',
-                'trackings.status', 'trackings.parent', 'tra.created_at',
-                'trackings.dependencia_destino_id', 'tra.entity_id'
+                'trackings.dependencia_id', 'trackings.status', 'trackings.parent', 'tra.created_at',
+                'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 'tra.files', 'trackings.files as tracking_files'
             ).paginate(page || 1, 20);
         // to JSON
-        return await tracking.toJSON();
+        tracking = await tracking.toJSON();
+        // recovery files
+        tracking.data.map(async tra => {
+            tra.files = await JSON.parse(tra.files || []);
+            tra.tramite_files = await tra.files.map(f => f = URL(f));
+            // response tracking
+            return tra;
+        });
+        // response 
+        return tracking;
     }   
 
     /**
@@ -81,7 +90,7 @@ class TrackingController {
         person = Collect(person || []);
         // add meta datos to tracking
         tracking.data.map(tra => {
-            tra.dependencia_origen = origen.where('id', tra.dependencia_origen_id).first() || {};
+            tra.dependencia_origen = origen.where('id', tra.dependencia_origen_id).first() || { nombre: 'Exterior' };
             tra.person = person.where('id', tra.person_id).first() || {};
             return tra;
         });
@@ -111,11 +120,12 @@ class TrackingController {
         let allow_validation = ['ACEPTADO', 'RECHAZADO'];
         // generar payload
         let payload = { 
-            description: '---',
-            file: null,
+            description: request.input('description'),
+            files: JSON.stringify([]),
             user_id: request.$auth.id,
             user_destino_id: request.input('user_destino_id', null),
             tramite_id: "",
+            dependencia_id: request.input('dependencia_destino_id'),
             dependencia_origen_id: request._dependencia.id,
             dependencia_destino_id: request.input('dependencia_destino_id'),
             current: 1,
@@ -131,27 +141,35 @@ class TrackingController {
             // obtener tracking parent
             tracking = await this._getTracking({ params, request }, ['PENDIENTE', 'REGISTRADO'], 1);
             payload.tramite_id = tracking.tramite_id;
-            payload.file = file_tmp;
+            payload.files = file_tmp;
             // derivar tracking
-            if (status == 'DERIVADO') await this._derivar({ request, payload });
+            if (status == 'DERIVADO') {
+                tracking.dependencia_destino_id = request.input('dependencia_destino_id');
+                description = request.input('description');
+                file = file_tmp;
+                await this._derivar({ request, payload });
+            }
             else if(status == 'RESPONDER') {
                 // get response 
                 let respuesta = await this._getResponse(tracking)
-                console.log(respuesta);
                 payload.status = 'ENVIADO';
                 payload.description = '---';
+                payload.dependencia_id = tracking.dependencia_origen_id;
+                payload.dependencia_origen_id = tracking.dependencia_origen_id;
                 payload.dependencia_destino_id = tracking.dependencia_origen_id;
                 payload.user_destino_id = respuesta.user_destino_id;
                 this._nextTracking({ payload });
                 status = 'RESPONDIDO';
-                description = request.input('description')
+                description = request.input('description');
+                file = file_tmp;
+                tracking.dependencia_destino_id = tracking.dependencia_origen_id;
             } else {
                 // add file y description
                 file = file_tmp;
                 description = request.input('description');
                 current = 1;
             }
-        } else if ( allow_validation.includes(status)) {
+        } else if (allow_validation.includes(status)) {
             // validar inputs
             await validation(validate, request.all(), {
                 status: 'required',
@@ -159,24 +177,23 @@ class TrackingController {
             });
             // obtener tracking sin parent
             tracking = await this._getTracking({ params, request }, ['ENVIADO', 'REGISTRADO'], 0);
-            if (tracking)
-                payload.user_destino_id = tracking.user_destino_id || null; 
-                payload.tramite_id = tracking.tramite_id;
-                payload.dependencia_origen_id = tracking.dependencia_origen_id;
-                payload.dependencia_destino_id = request._dependencia.id;
-                payload.user_id = request.$auth.id;
-                payload.parent = 1;
+            // setting payload
+            payload.user_destino_id = tracking.user_destino_id || null; 
+            payload.tramite_id = tracking.tramite_id;
+            payload.dependencia_id = request._dependencia.id;
+            payload.dependencia_origen_id = tracking.dependencia_origen_id;
+            payload.dependencia_destino_id = request._dependencia.id;
+            payload.user_id = request.$auth.id;
+            payload.parent = 1;
+            // add file y description
+            file = file_tmp;
+            description = request.input('description');
             // aceptar tracking
             if (status == 'ACEPTADO') await this._nextTracking({ payload });
-            else {
-                // add file y description
-                file = file_tmp;
-                description = request.input('description');
-                current = 1;
-            }
+            else current = 1;
         } else throw new Error(`El status no está permitido (${allow_verification.join(", ")}, ${allow_validation.join(", ")})`);
         // actualizar status del tracking actual
-        tracking.file = file;
+        tracking.files = file;
         tracking.user_id = request.$auth.id;
         tracking.current = current;
         tracking.description = description || tracking.description;
@@ -236,9 +253,10 @@ class TrackingController {
      */
     _saveFile = async ({ request }) => {
         // guardar archivo 
-        let file = await Storage.saveFile(request, 'file', {
-            size: '5mb',
-            extnames: ['pdf', 'docx']
+        let file = await Storage.saveFile(request, 'files', {
+            size: '2mb',
+            extnames: ['pdf', 'docx'],
+            multifiles: true
         }, Helpers, {
             path: '/tracking/file',
             options: {
@@ -246,8 +264,14 @@ class TrackingController {
                 overwrite: true 
             }
         });
+        // new files
+        let newFiles = [];
+        // add files 
+        if (file && file.success) {
+            file.files.map(f => newFiles.push(LINK('tmp', f.path)));
+        }
         // response path file
-        return file.path ? LINK('tmp', file.path) : null;
+        return JSON.stringify(newFiles);
     }
 
     /**

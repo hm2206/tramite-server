@@ -27,14 +27,14 @@ class StatusController {
     }
 
     _getAllowStatus = async ({ request, user_destino_id }) => {
-        let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO']);
+        let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'ENVIADO', 'DERIVADO', 'ANULADO']);
         // select dinamico
         let select_status = [];
         allow_status.map(allow => {
             let raw_status = DB.table('trackings as tra')
                 .join('tramites as t', 't.id', 'tra.tramite_id')
                 .where('t.entity_id', request._entity.id)
-                .where('dependencia_destino_id', request._dependencia.id)
+                .where('tra.dependencia_id', request._dependencia.id)
                 .where('tra.status', allow)
                 .select(DB.raw(`count(tra.status)`))
             // filter user_destino_id

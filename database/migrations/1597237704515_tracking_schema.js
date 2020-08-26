@@ -8,10 +8,11 @@ class TrackingSchema extends Schema {
     this.create('trackings', (table) => {
       table.increments()
       table.string('description');
-      table.string('file');
+      table.json('files');
       table.integer('user_id');
       table.integer('user_destino_id');
       table.integer('tramite_id').notNullable();
+      table.integer('dependencia_id').notNullable(); 
       table.integer('dependencia_origen_id').notNullable();
       table.integer('dependencia_destino_id').notNullable();
       table.boolean('current').defaultTo(true);

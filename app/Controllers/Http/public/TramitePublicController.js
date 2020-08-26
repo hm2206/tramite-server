@@ -73,13 +73,13 @@ class TramitePublicController {
             document_number: request.input('document_number'),
             tramite_type_id: request.input('tramite_type_id'),
             folio_count: request.input('folio_count'),
-            asunto: request.input('asunto'),
-            file: request.input('file', '/file')
+            asunto: request.input('asunto')
         }
         // guardar file
-        let file = await Storage.saveFile(request, 'file', {
+        let file = await Storage.saveFile(request, 'files', {
+            multifiles: true,
             required: true,
-            size: '5mb',
+            size: '2mb',
             extnames: ['pdf', 'docx']
         }, Helpers, {
             path: '/tramite/file',
@@ -88,12 +88,13 @@ class TramitePublicController {
                 overwrite: true 
             }
         })
+        // add files
+        let tmpFile = [];
+        await file.files.map(f => tmpFile.push(LINK('tmp', f.path)));
         // add file 
-        payload.file = LINK('tmp', file.path)
+        payload.files = JSON.stringify(tmpFile);
         // guardar tramite
         let tramite = await Tramite.create(payload);
-        // obtener url
-        await tramite.getUrlFile();
         // response
         return {
             success: true,
@@ -126,7 +127,7 @@ class TramitePublicController {
                 dependencia: {}
             }));
         // add dependencia
-        tramite.dependencia = dependencia || {};
+        tramite.dependencia = dependencia || { nombre: 'Exterior' };
         // obtener dependencia origen
         let origen = await request.api_authentication.get(`dependencia/${tramite.dependencia_origen_id}`)
             .then(res => res.data)
@@ -144,7 +145,7 @@ class TramitePublicController {
         // add persona 
         tramite.person = person || {};
         // generar url file
-        tramite.getUrlFile();
+        await tramite.getUrlFiles();
         // response
         return { 
             success: true,

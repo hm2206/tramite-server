@@ -15,6 +15,13 @@ class Tramite extends Model {
         this.file = URL(this.file, up);
     }
 
+    getUrlFiles = async (up = false) => {
+        this.files = JSON.parse(this.files || []);
+        let newFiles = [];
+        await this.files.filter(f => newFiles.push(URL(f, up)));
+        this.files = newFiles;
+    }
+
 }
 
 module.exports = Tramite

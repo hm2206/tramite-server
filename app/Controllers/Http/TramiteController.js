@@ -33,11 +33,11 @@ class TramiteController {
             tramite_type_id: request.input('tramite_type_id'),
             folio_count: request.input('folio_count'),
             asunto: request.input('asunto'),
-            file: request.input('file', '/file'),
             dependencia_origen_id: request._dependencia.id
         }
         // guardar file
-        let file = await Storage.saveFile(request, 'file', {
+        let file = await Storage.saveFile(request, 'files', {
+            multifiles: true,
             required: true,
             size: '5mb',
             extnames: ['pdf', 'docx']
@@ -48,8 +48,11 @@ class TramiteController {
                 overwrite: true 
             }
         })
+        // add files
+        let tmpFile = [];
+        await file.files.map(f => tmpFile.push(LINK('tmp', f.path)));
         // add file 
-        payload.file = LINK('tmp', file.path)
+        payload.files = JSON.stringify(tmpFile);
         // guardar tramite
         let tramite = await Tramite.create(payload)
         // obtener url
