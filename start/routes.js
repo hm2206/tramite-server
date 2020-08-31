@@ -8,6 +8,9 @@ const addGroup = (group) => {
   return group;
 }
 
+// visualizar archivo
+Route.get('file', 'FileController.handle');
+
 
 // ruta v1
 addGroup(Route.group(() => {

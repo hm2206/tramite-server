@@ -11,6 +11,10 @@ class Tramite extends Model {
         this.addHook('afterCreate', 'TramiteHook.createTracking');
     }
 
+    tramite_type = () => {
+        return this.belongsTo('App/Models/TramiteType');
+    }
+
     getUrlFile = (up = false) => {
         this.file = URL(this.file, up);
     }

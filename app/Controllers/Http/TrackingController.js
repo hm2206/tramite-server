@@ -34,7 +34,7 @@ class TrackingController {
      * @param {*} param0 
      */
     _getTramiteTracking = async ({ request, user_id }) => {
-        let { page, status } = request.all();
+        let { page, status, query_search } = request.all();
         // get tracking
         let tracking = Tracking.query()
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
@@ -43,14 +43,16 @@ class TrackingController {
             .where('trackings.dependencia_id', request._dependencia.id)
         // filtros
         if (status) tracking.where('status', status);
-        if (user_id) tracking.where('trackings.user_destino_id', user_id)
+        if (query_search) tracking.where('tra.slug', 'like', `%${query_search}%`);
+        if (user_id) tracking.where('trackings.user_destino_id', user_id);
         else tracking.whereNull('trackings.user_destino_id');
         // get paginate
         tracking = await tracking.select(
                 'trackings.id', 'tra.slug', 'tra.document_number', 
                 'type.description', 'tra.person_id', 'tra.dependencia_origen_id',
                 'trackings.dependencia_id', 'trackings.status', 'trackings.parent', 'tra.created_at',
-                'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 'tra.files', 'trackings.files as tracking_files'
+                'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 'tra.files', 
+                'trackings.files as tracking_files', 'type.description as tramite_type'
             ).paginate(page || 1, 20);
         // to JSON
         tracking = await tracking.toJSON();
@@ -260,7 +262,6 @@ class TrackingController {
         }, Helpers, {
             path: '/tracking/file',
             options: {
-                name: `tracking_${uid(8)}`,
                 overwrite: true 
             }
         });

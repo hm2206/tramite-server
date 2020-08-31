@@ -7,6 +7,7 @@ const Tramite = use('App/Models/Tramite');
 const uid = require('uid')
 const Helpers = use('Helpers')
 const { LINK } = require('../../../utils')
+const Event = use('Event');
 
 class TramiteController {
 
@@ -44,7 +45,6 @@ class TramiteController {
         }, Helpers, {
             path: '/tramite/file',
             options: {
-                name: `tramite_${slug}`,
                 overwrite: true 
             }
         })
@@ -57,6 +57,10 @@ class TramiteController {
         let tramite = await Tramite.create(payload)
         // obtener url
         await tramite.getUrlFile();
+        // get person 
+        let person = request.$auth.person;
+        // send event
+        Event.fire('tramite::new', request, tramite, person.email_contact, request._dependencia);
         // response
         return {
             success: true,

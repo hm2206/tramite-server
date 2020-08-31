@@ -10,6 +10,7 @@ const uid = require('uid')
 const Helpers = use('Helpers')
 const { LINK, URL } = require('../../../../utils')
 const collect = require('collect.js');
+const Event = use('Event');
 
 class TramitePublicController {
 
@@ -84,7 +85,6 @@ class TramitePublicController {
         }, Helpers, {
             path: '/tramite/file',
             options: {
-                name: `tramite_${slug}`,
                 overwrite: true 
             }
         })
@@ -95,6 +95,8 @@ class TramitePublicController {
         payload.files = JSON.stringify(tmpFile);
         // guardar tramite
         let tramite = await Tramite.create(payload);
+        // send event
+        Event.fire('tramite::new', request, tramite, person.email_contact, dependencia.dependencia);
         // response
         return {
             success: true,
@@ -110,7 +112,10 @@ class TramitePublicController {
      * @param {*} param0 
      */
     show = async ({ params, request }) => {
-        let tramite = await Tramite.findBy('slug', params.slug);
+        let tramite = await Tramite.query()
+            .with('tramite_type')
+            .where('slug', params.slug)
+            .first();
         if (!tramite) throw new Error('No se encontró el tramite');
         // obtener entity
         let entity = await request.api_authentication.get(`entity/${tramite.entity_id}`)
@@ -165,7 +170,7 @@ class TramitePublicController {
         let tracking = await Tracking.query()
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .where('tra.slug', params.slug)
-            .whereIn('trackings.status', ['ACEPTADO', 'DERIVADO', 'RESPONDIDO', 'RECHAZADO', 'FINALIZADO'])
+            .whereIn('trackings.status', ['ACEPTADO', 'DERIVADO', 'RESPONDIDO', 'RECHAZADO', 'FINALIZADO','ANULADO'])
             .select('trackings.*')
             .paginate(page || 1, 20);
         // parse json 
@@ -185,16 +190,17 @@ class TramitePublicController {
         let userIds = collect(tracking.data).pluck('user_id').all().join('&ids[]=');
         let user = await request.api_authentication.get(`user?ids[]=${userIds}`) 
             .then(res => res.data)
-            .catch(err => ({
-                data: []
-            }));
+            .catch(err => ({ data: [] }));
         // collect user
         user = collect(user.data || []);
         // add dependencia destino y user
-        tracking.data.map(tra => {
+        tracking.data.map(async tra => {
             tra.dependencia_destino = destino.where('id', tra.dependencia_destino_id).first() || {};
             tra.user = user.where('id', tra.user_id).first() || {};
-            tra.file = tra.file ? URL(tra.file) : null;
+            tra.files = await JSON.parse(tra.files) || [];
+            let newFiles = [];
+            await tra.files.filter(f => newFiles.push(URL(f)));
+            tra.files = newFiles;
             return tra;
         });
         // response
