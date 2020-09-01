@@ -75,7 +75,6 @@ class TramitePublicController {
         if (!code_verify) throw new Error("El código de verificación no fué generado");
         let code_raw = await Encryption.decrypt(code_verify.code);
         if (code_raw != request.input('code')) throw new ValidatorError([{ field: 'code', message: 'El código es inválido' }])
-        console.log(code_raw, request.input('code'));
         // generar slug
         let slug = `${type.short_name}${uid(10)}`.toUpperCase().substr(0, 10);
         // payload
