@@ -11,6 +11,9 @@ const Helpers = use('Helpers')
 const { LINK, URL } = require('../../../../utils')
 const collect = require('collect.js');
 const Event = use('Event');
+const Encryption = use('Encryption')
+const CodeVerify = use('App/Models/CodeVerify');
+
 
 class TramitePublicController {
 
@@ -26,7 +29,8 @@ class TramitePublicController {
             tramite_type_id: 'required|max:11',
             document_number: 'required|min:4|max:255',
             folio_count: 'required|min:1|max:10',
-            asunto: 'required|min:4'
+            asunto: 'required|min:4',
+            code: "required|min:8|max:8"
         });
         // obtener entity
         let entity = await request.api_authentication.get(`entity/${request.input('entity_id')}`)
@@ -63,6 +67,15 @@ class TramitePublicController {
         // obtener tramite documento
         let type = await TramiteType.find(request.input('tramite_type_id'));
         if (!type) throw new ValidatorError([{ field: 'tramite_type_id', message: 'EL tipo de tramite es incorrecto' }]);
+        // validar code verificación
+        let code_verify = await CodeVerify.query()
+            .where('person_id', person.id)
+            .where('is_revoked', 0)
+            .first();
+        if (!code_verify) throw new Error("El código de verificación no fué generado");
+        let code_raw = await Encryption.decrypt(code_verify.code);
+        if (code_raw != request.input('code')) throw new ValidatorError([{ field: 'code', message: 'El código es inválido' }])
+        console.log(code_raw, request.input('code'));
         // generar slug
         let slug = `${type.short_name}${uid(10)}`.toUpperCase().substr(0, 10);
         // payload
@@ -95,6 +108,9 @@ class TramitePublicController {
         payload.files = JSON.stringify(tmpFile);
         // guardar tramite
         let tramite = await Tramite.create(payload);
+        /// revokar code
+        code_verify.is_revoked = 1;
+        await code_verify.save();
         // send event
         Event.fire('tramite::new', request, tramite, person.email_contact, dependencia.dependencia);
         // response

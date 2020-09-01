@@ -40,6 +40,9 @@ addGroup(Route.group(() => {
   // Ruta Publica de Dependencia
   Route.get('/public/dependencia/:entityId', 'public/DependenciaPublicController.show').middleware(['allow:public/DependenciaPublicController.show']);
 
+  // Ruta para generar code de verificación
+  Route.post('/code_verify', 'CodeVerifyController.store').middleware(['allow:CodeVerifyController.store']);
+
 }));
 
 
