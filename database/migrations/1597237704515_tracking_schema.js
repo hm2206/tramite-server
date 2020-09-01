@@ -17,7 +17,7 @@ class TrackingSchema extends Schema {
       table.integer('dependencia_destino_id').notNullable();
       table.boolean('current').defaultTo(true);
       table.boolean('parent').defaultTo(false);
-      table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'ENVIADO', 'RESPONDIDO']).defaultTo('PENDIENTE');
+      table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'ENVIADO', 'RESPONDIDO', 'COPIA']).defaultTo('PENDIENTE');
       table.boolean('state').defaultTo(true);
       table.timestamps()
     })
