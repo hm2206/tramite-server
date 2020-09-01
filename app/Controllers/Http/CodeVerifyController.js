@@ -42,7 +42,10 @@ class CodeVerifyController {
         }).then(res => res.data)
         .catch(err => ({  success: false, message: err.message}));
         // validar envio
-        if (!send_mail.success) throw new Error("No se pudó enviar el código de verificación a su correo");
+        if (!send_mail.success) {
+            console.log(send_mail.message);
+            throw new Error("No se pudó enviar el código de verificación a su correo");
+        }
         // response 
         return {
             success: true,
