@@ -36,6 +36,10 @@ addGroup(Route.group(() => {
 
   // Ruta public de Tip. Tramite
   Route.get('/tramite_type', 'TramiteTypeController.index').middleware(['allow:TramiteTypeController.index']);
+  Route.post('/tramite_type', 'TramiteTypeController.store').middleware(['allow:TramiteTypeController.store', 'jwt']);
+  Route.get('/tramite_type/:id', 'TramiteTypeController.show').middleware(['allow:TramiteTypeController.show', 'jwt']);
+  Route.post('/tramite_type/:id/update', 'TramiteTypeController.update').middleware(['allow:TramiteTypeController.update', 'jwt']);
+  Route.post('/tramite_type/:id/state', 'TramiteTypeController.state').middleware(['allow:TramiteTypeController.state', 'jwt']);
 
   // Ruta Publica de Dependencia
   Route.get('/public/dependencia/:entityId', 'public/DependenciaPublicController.show').middleware(['allow:public/DependenciaPublicController.show']);
