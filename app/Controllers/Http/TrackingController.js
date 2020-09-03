@@ -7,6 +7,7 @@ const uid = require('uid');
 const Helpers = use('Helpers');
 const { LINK, URL } = require('../../../utils');
 const Collect = require('collect.js');
+const { raw } = require('mysql');
 
 class TrackingController {
 
@@ -111,6 +112,7 @@ class TrackingController {
      */
     next = async ({ params, request }) => {
         // variable globales
+        let copy = JSON.parse(request.input('copy')) || [];
         let tracking = null;
         let file_tmp = await this._saveFile({ request });
         let file = null;
@@ -150,6 +152,14 @@ class TrackingController {
                 description = request.input('description');
                 file = file_tmp;
                 await this._derivar({ request, payload });
+                // generar copia
+                await this._copies({ 
+                    request, 
+                    payload: copy, 
+                    dependencia_origen_id: payload.dependencia_origen_id, 
+                    dependencia_destino_id: payload.dependencia_destino_id,
+                    tramite_id: tracking.tramite_id
+                });
             }
             else if(status == 'RESPONDER') {
                 // get response 
@@ -165,11 +175,27 @@ class TrackingController {
                 description = request.input('description');
                 file = file_tmp;
                 tracking.dependencia_destino_id = tracking.dependencia_origen_id;
+                // generar copia
+                await this._copies({ 
+                    request, 
+                    payload: copy, 
+                    dependencia_origen_id: payload.dependencia_origen_id, 
+                    dependencia_destino_id: payload.dependencia_destino_id,
+                    tramite_id: tracking.tramite_id
+                });
             } else {
                 // add file y description
                 file = file_tmp;
                 description = request.input('description');
                 current = 1;
+                // generar copia
+                await this._copies({ 
+                    request, 
+                    payload: copy, 
+                    dependencia_origen_id: tracking.dependencia_origen_id, 
+                    dependencia_destino_id: tracking.dependencia_destino_id,
+                    tramite_id: tracking.tramite_id
+                });
             }
         } else if (allow_validation.includes(status)) {
             // validar inputs
@@ -191,8 +217,28 @@ class TrackingController {
             file = file_tmp;
             description = request.input('description');
             // aceptar tracking
-            if (status == 'ACEPTADO') await this._nextTracking({ payload });
-            else current = 1;
+            if (status == 'ACEPTADO') {
+                await this._nextTracking({ payload });
+                // generar copia
+                await this._copies({ 
+                    request, 
+                    payload: copy, 
+                    dependencia_origen_id: payload.dependencia_origen_id, 
+                    dependencia_destino_id: payload.dependencia_destino_id,
+                    tramite_id: tracking.tramite_id 
+                });
+            }
+            else {
+                current = 1;
+                // generar copia
+                await this._copies({ 
+                    request, 
+                    payload: copy, 
+                    dependencia_origen_id: tracking.dependencia_origen_id, 
+                    dependencia_destino_id: tracking.dependencia_destino_id,
+                    tramite_id: tracking.tramite_id
+                });
+            }
         } else throw new Error(`El status no está permitido (${allow_verification.join(", ")}, ${allow_validation.join(", ")})`);
         // actualizar status del tracking actual
         tracking.files = file;
@@ -304,6 +350,64 @@ class TrackingController {
         await this._nextTracking({ payload });
     }
 
+    /**
+     * agregar copia
+     * @param {*} param0 
+     */
+    _copies = async ({ request, payload = [], dependencia_origen_id, dependencia_destino_id, tramite_id }) => {
+        let newPayload = [];
+        // add ids
+        await payload.map((p, index) => {
+            // add _id
+            p._id = index + 1;
+            // response
+            return p;
+        });
+        // add collect
+        let datos = Collect(payload);
+        let ids = [];
+        // filtrar duplicados
+        await datos.map(async d => {
+            let raw_query = await datos.where('dependencia_id', d.dependencia_id).where('user_id', d.user_id).where('_id', '!=', d._id);
+            let count = raw_query.count();
+            let pluck = raw_query.pluck('_id').all();
+            // validar count 
+            if (count > 1) {
+                if (ids.indexOf(d._id) == -1) {
+                    ids = [...ids, ...pluck];
+                    newPayload.push(this._formatPayloadCopy({ request, copy: d, dependencia_origen_id, dependencia_destino_id, tramite_id }));
+                } 
+            } else {
+                newPayload.push(this._formatPayloadCopy({ request, copy: d, dependencia_origen_id, dependencia_destino_id, tramite_id }));
+            }
+            // response 
+            return d;
+        });
+        // insert copy
+        let newCopy = await Tracking.createMany(newPayload);
+        // response
+        return  newCopy;
+    }
+
+    /**
+     * Formato para prepare query copy
+     * @param {*} param0 
+     */
+    _formatPayloadCopy = ({ request, copy, dependencia_origen_id, dependencia_destino_id, tramite_id }) => {
+        return {
+            tramite_id,
+            dependencia_id: copy.dependencia_id,
+            dependencia_origen_id,
+            dependencia_destino_id,
+            user_id: request.$auth.id,
+            user_destino_id: copy.user_id,
+            description: null,
+            files: null,
+            parent: 0,
+            current: 0,
+            status: 'COPIA'
+        }
+    }
 }
 
 module.exports = TrackingController
