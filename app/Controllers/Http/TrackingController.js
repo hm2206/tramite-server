@@ -52,15 +52,23 @@ class TrackingController {
                 'trackings.id', 'tra.slug', 'tra.document_number', 
                 'type.description', 'tra.person_id', 'tra.dependencia_origen_id',
                 'trackings.dependencia_id', 'trackings.status', 'trackings.parent', 'tra.created_at',
-                'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 'tra.files', 
-                'trackings.files as tracking_files', 'type.description as tramite_type'
+                'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 'tra.files as tramite_files', 
+                'trackings.files', 'type.description as tramite_type'
             ).paginate(page || 1, 20);
         // to JSON
         tracking = await tracking.toJSON();
         // recovery files
-        tracking.data.map(async tra => {
-            tra.files = await JSON.parse(tra.files || []);
-            tra.tramite_files = await tra.files.map(f => f = URL(f));
+        await tracking.data.map(async tra => {
+            // add files 
+            let newFiles = [];
+            tra.files = await JSON.parse(tra.files) || [];
+            tra.files = await tra.files.filter(f => newFiles.push(URL(f)));
+            tra.files = newFiles;
+            // add tramite files
+            let newTramiteFiles = [];
+            tra.tramite_files = await JSON.parse(tra.tramite_files) || [];
+            tra.tramite_files = await tra.tramite_files.filter(f => newTramiteFiles.push(URL(f)));
+            tra.tramite_files = newTramiteFiles;
             // response tracking
             return tra;
         });
