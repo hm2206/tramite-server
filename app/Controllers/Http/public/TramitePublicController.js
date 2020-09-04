@@ -95,7 +95,7 @@ class TramitePublicController {
             size: '2mb',
             extnames: ['pdf', 'docx']
         }, Helpers, {
-            path: '/tramite/file',
+            path: `/tramite/${slug}`,
             options: {
                 overwrite: true 
             }

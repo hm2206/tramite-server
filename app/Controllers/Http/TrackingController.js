@@ -7,7 +7,7 @@ const uid = require('uid');
 const Helpers = use('Helpers');
 const { LINK, URL } = require('../../../utils');
 const Collect = require('collect.js');
-const { raw } = require('mysql');
+const moment = require('moment');
 
 class TrackingController {
 
@@ -122,7 +122,7 @@ class TrackingController {
         // variable globales
         let copy = JSON.parse(request.input('copy')) || [];
         let tracking = null;
-        let file_tmp = await this._saveFile({ request });
+        let file_tmp = null;
         let file = null;
         let description = null;
         let current = 0;
@@ -152,6 +152,8 @@ class TrackingController {
             });
             // obtener tracking parent
             tracking = await this._getTracking({ params, request }, ['PENDIENTE', 'REGISTRADO'], 1);
+            // add files
+            file_tmp = await this._saveFile({ request }, tracking.slug);
             payload.tramite_id = tracking.tramite_id;
             payload.files = file_tmp;
             // derivar tracking
@@ -222,6 +224,7 @@ class TrackingController {
             payload.user_id = request.$auth.id;
             payload.parent = 1;
             // add file y description
+            file_tmp = await this._saveFile({ request }, tracking.slug);
             file = file_tmp;
             description = request.input('description');
             // aceptar tracking
@@ -295,7 +298,7 @@ class TrackingController {
             .where('trackings.id', params.id)
             .where('trackings.current', 1)
             .where('trackings.parent', parent)
-            .select('trackings.*')
+            .select('trackings.*', 'tra.slug')
             .first();
         // validar tracking
         if (!tracking) throw new Error('No se encontró el tracking del tramite')
@@ -307,14 +310,16 @@ class TrackingController {
      * guardar file
      * @param {*} param0 
      */
-    _saveFile = async ({ request }) => {
+    _saveFile = async ({ request }, slug) => {
+        // get fecha 
+        let date = `${moment().format('YYYY-MM-DD')}`.replace('-', "");
         // guardar archivo 
         let file = await Storage.saveFile(request, 'files', {
             size: '2mb',
             extnames: ['pdf', 'docx'],
             multifiles: true
         }, Helpers, {
-            path: '/tracking/file',
+            path: `tramite/${slug}/tracking/${date.replace("-", "")}`,
             options: {
                 overwrite: true 
             }
