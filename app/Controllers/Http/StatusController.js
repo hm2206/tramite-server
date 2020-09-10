@@ -27,7 +27,7 @@ class StatusController {
     }
 
     _getAllowStatus = async ({ request, user_destino_id }) => {
-        let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'ENVIADO', 'DERIVADO', 'ANULADO']);
+        let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'ENVIADO', 'DERIVADO', 'ANULADO']);
         // select dinamico
         let select_status = [];
         allow_status.map(allow => {

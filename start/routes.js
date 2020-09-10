@@ -47,6 +47,11 @@ addGroup(Route.group(() => {
   // Ruta para generar code de verificación
   Route.post('/code_verify', 'CodeVerifyController.store').middleware(['allow:CodeVerifyController.store']);
 
+
+  // Ruta para obtener las configuraciones
+  Route.get('/config', 'ConfigController.index').middleware(['allow:ConfigController.index', 'jwt']);
+  Route.get('/config/:key', 'ConfigController.show').middleware(['allow:ConfigController.show', 'jwt']);
+
 }));
 
 

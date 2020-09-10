@@ -1,6 +1,7 @@
 'use strict'
 
 const Tracking = use('App/Models/Tracking');
+const Config = use('App/Models/Config');
 const { validation, ValidatorError, Storage } = require('validator-error-adonis');
 const { validate } = use('Validator');
 const uid = require('uid');
@@ -8,6 +9,7 @@ const Helpers = use('Helpers');
 const { LINK, URL } = require('../../../utils');
 const Collect = require('collect.js');
 const moment = require('moment');
+const DB = use('Database');
 
 class TrackingController {
 
@@ -36,6 +38,7 @@ class TrackingController {
      */
     _getTramiteTracking = async ({ request, user_id }) => {
         let { page, status, query_search } = request.all();
+        let status_asc = ['PENDIENTE', 'REGISTRADO', 'ENVIADO'];
         // get tracking
         let tracking = Tracking.query()
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
@@ -49,12 +52,14 @@ class TrackingController {
         else tracking.whereNull('trackings.user_destino_id');
         // get paginate
         tracking = await tracking.select(
-                'trackings.id', 'tra.slug', 'tra.document_number', 
-                'type.description', 'tra.person_id', 'tra.dependencia_origen_id',
-                'trackings.dependencia_id', 'trackings.status', 'trackings.parent', 'tra.created_at',
-                'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 'tra.files as tramite_files', 
-                'trackings.files', 'type.description as tramite_type'
-            ).paginate(page || 1, 20);
+                'trackings.id', 'tra.slug', 'tra.document_number', 'type.description', 
+                'tra.person_id', 'trackings.dependencia_origen_id', 'trackings.dependencia_id', 
+                'trackings.status', 'trackings.parent', 'tra.created_at',
+                'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 
+                'tra.files as tramite_files', 'trackings.files', 'type.description as tramite_type',
+                'trackings.updated_at'
+            ).orderBy('trackings.updated_at', status_asc.includes(status) ? 'ASC' : 'DESC')
+            .paginate(page || 1, 20);
         // to JSON
         tracking = await tracking.toJSON();
         // recovery files
@@ -127,6 +132,7 @@ class TrackingController {
         let description = null;
         let current = 0;
         let status = `${request.input('status')}`.toUpperCase();
+        let message = `El trámite se a ${status.toLowerCase()} correctamente`;
         // status permitidos
         let allow_verification = ['DERIVADO', 'FINALIZADO', 'ANULADO', 'RESPONDER'];
         let allow_validation = ['ACEPTADO', 'RECHAZADO'];
@@ -152,6 +158,7 @@ class TrackingController {
             });
             // obtener tracking parent
             tracking = await this._getTracking({ params, request }, ['PENDIENTE', 'REGISTRADO'], 1);
+            await this._configurationError(tracking.status, 'NEXT', tracking.status, tracking.id, 'ASC');
             // add files
             file_tmp = await this._saveFile({ request }, tracking.slug);
             payload.tramite_id = tracking.tramite_id;
@@ -161,7 +168,8 @@ class TrackingController {
                 tracking.dependencia_destino_id = request.input('dependencia_destino_id');
                 description = request.input('description');
                 file = file_tmp;
-                await this._derivar({ request, payload });
+                let derivado = await this._derivar({ request, payload });
+                message = await this._configuration(derivado.status, 'NEXT', derivado.status, derivado.id, 'ASC') ? message : `El trámite fue derivado, pero aún no podrá ser atendido`;
                 // generar copia
                 await this._copies({ 
                     request, 
@@ -180,7 +188,8 @@ class TrackingController {
                 payload.dependencia_origen_id = tracking.dependencia_origen_id;
                 payload.dependencia_destino_id = tracking.dependencia_origen_id;
                 payload.user_destino_id = respuesta.user_destino_id;
-                this._nextTracking({ payload });
+                let res = await this._nextTracking({ payload });
+                message = await this._configuration(res.status, 'NEXT', res.status, aceptado.id, 'ASC') ? message : `El trámite fue respondido, pero aún no podrá ser atendido`;
                 status = 'RESPONDIDO';
                 description = request.input('description');
                 file = file_tmp;
@@ -215,6 +224,7 @@ class TrackingController {
             });
             // obtener tracking sin parent
             tracking = await this._getTracking({ params, request }, ['ENVIADO', 'REGISTRADO'], 0);
+            await this._configurationError('ENVIADO', 'NEXT', 'ENVIADO', tracking.id, 'ASC');
             // setting payload
             payload.user_destino_id = tracking.user_destino_id || null; 
             payload.tramite_id = tracking.tramite_id;
@@ -229,7 +239,8 @@ class TrackingController {
             description = request.input('description');
             // aceptar tracking
             if (status == 'ACEPTADO') {
-                await this._nextTracking({ payload });
+                let aceptado = await this._nextTracking({ payload });
+                message = await this._configuration('PENDIENTE', 'NEXT', 'PENDIENTE', aceptado.id, 'ASC') ? message : `El trámite fue aceptado, pero aún no podrá ser atendido`;
                 // generar copia
                 await this._copies({ 
                     request, 
@@ -263,7 +274,7 @@ class TrackingController {
             success: true,
             status: 201,
             code: 'RES_TRACKING_NEXT',
-            message: `El trámite se a ${status.toLowerCase()} correctamente`
+            message
         }
     }
 
@@ -273,7 +284,7 @@ class TrackingController {
      */
     _getResponse = async (tracking) => {
         let response = await Tracking.query()
-            .where('status', 'DERIVADO')
+            .where('status', 'res')
             .where('tramite_id', tracking.tramite_id)
             .where('parent', 1)
             .orderBy('id', 'DESC')
@@ -340,7 +351,7 @@ class TrackingController {
      */
     _nextTracking = async ({ payload }) => {
         // save tracking
-        await Tracking.create(payload);
+        return await Tracking.create(payload);
     }
 
     /**
@@ -360,7 +371,7 @@ class TrackingController {
         // change status
         payload.status = 'ENVIADO';
         // save next tracking
-        await this._nextTracking({ payload });
+        return await this._nextTracking({ payload });
     }
 
     /**
@@ -420,6 +431,36 @@ class TrackingController {
             current: 0,
             status: 'COPIA'
         }
+    }
+
+
+    _configuration = async (key, variable, status, id, orden = 'ASC') => {
+        let config = await Config.query()
+            .where('key', key)
+            .where('variable', variable)
+            .select('id', 'key', DB.raw('CONVERT(value, SIGNED INTEGER) as value'))
+            .first();
+        // validar
+        if (config) {
+            let tracking = await Tracking.query()
+                .where('status', status)
+                .orderBy('updated_at', orden)
+                .limit(config.value)
+                .fetch();
+            // collect
+            let result = Collect(await tracking.toJSON());  
+            // validar tracking
+            if (result.where('id', id).first()) return true;
+            // no existe 
+            return false;
+        }
+        // response 
+        return true;
+    }
+
+    _configurationError = async (key, variable, status, id, orden = 'ASC') => {
+        let validar = await  this._configuration(key, variable, status, id, orden);
+        if (!validar) throw new Error("No se puede realizar la acción, el tracking no está en el rango de la configuración");
     }
 }
 

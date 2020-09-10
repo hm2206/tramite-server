@@ -191,7 +191,7 @@ class TramitePublicController {
         // parse json 
         tracking = await tracking.toJSON();
         // obtener dependencia destino
-        let idDestinos = collect(tracking.data).pluck('dependencia_destino_id').all().join('&ids[]='); 
+        let idDestinos = await collect(tracking.data).pluck('dependencia_destino_id').all().join('&ids[]='); 
         let destino = await request.api_authentication.get(`dependencia?ids[]=${idDestinos}`)
             .then(res => res.data)
             .catch(err => ({
