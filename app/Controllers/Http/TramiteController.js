@@ -70,7 +70,7 @@ class TramiteController {
         // get person 
         let person = request.$auth.person;
         // send event
-        // Event.fire('tramite::new', request, tramite, person.email_contact, request._dependencia);
+        Event.fire('tramite::new', request, tramite, person.email_contact, request._dependencia);
         // response
         return {
             success: true,

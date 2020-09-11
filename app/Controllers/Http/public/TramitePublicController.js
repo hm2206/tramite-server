@@ -13,6 +13,7 @@ const collect = require('collect.js');
 const Event = use('Event');
 const Encryption = use('Encryption')
 const CodeVerify = use('App/Models/CodeVerify');
+const { addQrPdf } = require('../../../Services/addQrPdf');
 
 
 class TramitePublicController {
@@ -102,9 +103,18 @@ class TramitePublicController {
         })
         // add files
         let tmpFile = [];
-        await file.files.map(f => tmpFile.push(LINK('tmp', f.path)));
+        // add files
+        for (let f of file.files) {
+            let newName = `code_qr_${f.name}`;
+            let arrayFile = `${f.path}`.split('/');
+            arrayFile.pop();
+            let newPath = await `${arrayFile.join('/')}/${newName}`;
+            await addQrPdf(newPath, f.realPath, Helpers.tmpPath('code-qr.png'));
+            let newLink = await LINK('tmp', newPath);
+            tmpFile.push(newLink);
+        }
         // add file 
-        payload.files = JSON.stringify(tmpFile);
+        payload.files = JSON.stringify(await tmpFile);
         // guardar tramite
         let tramite = await Tramite.create(payload);
         /// revokar code
