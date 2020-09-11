@@ -53,5 +53,3 @@ addGroup(Route.group(() => {
   Route.get('/config/:key', 'ConfigController.show').middleware(['allow:ConfigController.show', 'jwt']);
 
 }));
-
-

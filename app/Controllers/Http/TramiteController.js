@@ -8,6 +8,7 @@ const uid = require('uid')
 const Helpers = use('Helpers')
 const { LINK } = require('../../../utils')
 const Event = use('Event');
+const { addQrPdf } = require('../../Services/addQrPdf');
 
 class TramiteController {
 
@@ -47,12 +48,21 @@ class TramiteController {
             options: {
                 overwrite: true 
             }
-        })
+        });
         // add files
         let tmpFile = [];
-        await file.files.map(f => tmpFile.push(LINK('tmp', f.path)));
+        // add files
+        for (let f of file.files) {
+            let newName = `code_qr_${f.name}`;
+            let arrayFile = `${f.path}`.split('/');
+            arrayFile.pop();
+            let newPath = await `${arrayFile.join('/')}/${newName}`;
+            await addQrPdf(newPath, f.realPath, Helpers.tmpPath('code-qr.png'));
+            let newLink = await LINK('tmp', newPath);
+            tmpFile.push(newLink);
+        }
         // add file 
-        payload.files = JSON.stringify(tmpFile);
+        payload.files = JSON.stringify(await tmpFile);
         // guardar tramite
         let tramite = await Tramite.create(payload)
         // obtener url
@@ -60,7 +70,7 @@ class TramiteController {
         // get person 
         let person = request.$auth.person;
         // send event
-        Event.fire('tramite::new', request, tramite, person.email_contact, request._dependencia);
+        // Event.fire('tramite::new', request, tramite, person.email_contact, request._dependencia);
         // response
         return {
             success: true,
