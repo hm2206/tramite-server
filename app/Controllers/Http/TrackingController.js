@@ -185,11 +185,11 @@ class TrackingController {
                 payload.status = 'ENVIADO';
                 payload.description = '---';
                 payload.dependencia_id = tracking.dependencia_origen_id;
-                payload.dependencia_origen_id = tracking.dependencia_origen_id;
+                payload.dependencia_origen_id = tracking.dependencia_id;
                 payload.dependencia_destino_id = tracking.dependencia_origen_id;
                 payload.user_destino_id = respuesta.user_destino_id;
                 let res = await this._nextTracking({ payload });
-                message = await this._configuration(res.status, 'NEXT', res.status, aceptado.id, 'ASC') ? message : `El trámite fue respondido, pero aún no podrá ser atendido`;
+                message = await this._configuration(res.status, 'NEXT', res.status, res.id, 'ASC') ? message : `El trámite fue respondido, pero aún no podrá ser atendido`;
                 status = 'RESPONDIDO';
                 description = request.input('description');
                 file = file_tmp;
@@ -284,9 +284,9 @@ class TrackingController {
      */
     _getResponse = async (tracking) => {
         let response = await Tracking.query()
-            .where('status', 'res')
             .where('tramite_id', tracking.tramite_id)
-            .where('parent', 1)
+            .where('status', 'DERIVADO')
+            .where('dependencia_id', tracking.dependencia_origen_id)
             .orderBy('id', 'DESC')
             .first();
         // validar response
