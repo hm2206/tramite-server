@@ -13,7 +13,7 @@ const collect = require('collect.js');
 const Event = use('Event');
 const Encryption = use('Encryption')
 const CodeVerify = use('App/Models/CodeVerify');
-const { addQrPdf } = require('../../../Services/addQrPdf');
+const { addQrPdfEmbed } = require('../../../Services/addQrPdf');
 
 
 class TramitePublicController {
@@ -109,8 +109,8 @@ class TramitePublicController {
             let arrayFile = `${f.path}`.split('/');
             arrayFile.pop();
             let newPath = await `${arrayFile.join('/')}/${newName}`;
-            await addQrPdf(newPath, f.realPath, Helpers.tmpPath('code-qr.png'));
             let newLink = await LINK('tmp', newPath);
+            await addQrPdfEmbed(newPath, f.realPath, Encryption.encrypt({ slug, file: newLink }));
             tmpFile.push(newLink);
         }
         // add file 

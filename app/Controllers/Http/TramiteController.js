@@ -8,7 +8,8 @@ const uid = require('uid')
 const Helpers = use('Helpers')
 const { LINK } = require('../../../utils')
 const Event = use('Event');
-const { addQrPdf } = require('../../Services/addQrPdf');
+const { addQrPdfEmbed } = require('../../Services/addQrPdf');
+const Encryption = use('Encryption')
 
 class TramiteController {
 
@@ -29,7 +30,7 @@ class TramiteController {
             user_id: request.$auth.id,
             entity_id: request._entity.id,
             dependencia_id: request._dependencia.id,
-            person_id: request.$auth.person_id,
+            person_id: request.input('person_id'),
             slug,
             document_number: request.input('document_number'),
             tramite_type_id: request.input('tramite_type_id'),
@@ -57,8 +58,8 @@ class TramiteController {
             let arrayFile = `${f.path}`.split('/');
             arrayFile.pop();
             let newPath = await `${arrayFile.join('/')}/${newName}`;
-            await addQrPdf(newPath, f.realPath, Helpers.tmpPath('code-qr.png'));
             let newLink = await LINK('tmp', newPath);
+            await addQrPdfEmbed(newPath, f.realPath, Encryption.encrypt({ slug, file: newLink }));
             tmpFile.push(newLink);
         }
         // add file 

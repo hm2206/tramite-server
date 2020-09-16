@@ -39,12 +39,14 @@
     "pdf-lib": "^1.10.0",
     "pdf2html": "^2.5.2",
     "pdfassembler": "0.1.0-beta.8",
+    "qrcode": "^1.4.4",
     "random": "^2.2.0",
     "slugify": "^1.4.4",
     "strtotime": "^1.0.0",
     "uid": "^1.0.0",
     "validator-error": "^1.1.2",
-    "validator-error-adonis": "^1.1.2"
+    "validator-error-adonis": "^1.1.2",
+    "wkhtmltopdf": "^0.3.4"
   },
   "devDependencies": {},
   "autoload": {

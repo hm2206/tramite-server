@@ -52,4 +52,22 @@ addGroup(Route.group(() => {
   Route.get('/config', 'ConfigController.index').middleware(['allow:ConfigController.index', 'jwt']);
   Route.get('/config/:key', 'ConfigController.show').middleware(['allow:ConfigController.show', 'jwt']);
 
+
+  // Ruta de reportes
+  Route.get('/report/ticket', 'Report/TicketController.handle');
+
 }));
+
+
+
+
+Route.get('testing_pdf', async () => {
+  const PDFAssembler = require('pdfassembler').PDFAssembler;
+  const Helpers = use('Helpers');
+  const newPdf = new PDFAssembler(Helpers.tmpPath('firmado.pdf'));
+
+  let obj = await newPdf.getPDFStructure();
+  console.log(obj['/Root']['/Pages']['/Kids'][0]);
+  return 'ok';
+});
+
