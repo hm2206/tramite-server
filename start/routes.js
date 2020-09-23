@@ -1,5 +1,7 @@
 'use strict'
 
+const { pdfkitAddPlaceholder } = require('node-signpdf/dist/helpers');
+
 const Route = use('Route')
 
 // customizar group
@@ -61,13 +63,58 @@ addGroup(Route.group(() => {
 
 
 
-Route.get('testing_pdf', async () => {
-  const PDFAssembler = require('pdfassembler').PDFAssembler;
-  const Helpers = use('Helpers');
-  const newPdf = new PDFAssembler(Helpers.tmpPath('firmado.pdf'));
+// Route.get('testing_pdf', async () => {
+  
+//   const Drive = use('Drive');
+//   const Helpers = use('Helpers');
+//   const { PDFDocument, PDFDict, StandardFonts, PDFName } = require('pdf-lib');
 
-  let obj = await newPdf.getPDFStructure();
-  console.log(obj['/Root']['/Pages']['/Kids'][0]);
+//   let pdfBuffer = await Drive.get(Helpers.tmpPath('/prueba.pdf'))
+//   let pfxBuffer = await Drive.get(Helpers.tmpPath('/texas.pfx'))
+
+//   const pdfDoc = await PDFDocument.load(pdfBuffer);
+//   const page = pdfDoc.getPage(0);
+
+//   const form = await pdfDoc.getForm();
+
+//   // const superheroField = form.createTextField('Signature1')
+//   console.log(pdfDoc)
+
+//   const pdfBytes = await pdfDoc.save()
+  
+//   // guardar
+//   // await Drive.put(Helpers.tmpPath('/testing.pdf'), Buffer.from(pdfBytes));
+
+//   return 'ok';
+// });
+
+
+Route.get('testing_pdf', async () => {
+  
+  return 'ok';
+  const Drive = use('Drive');
+  const Helpers = use('Helpers');
+  const { PDFDocument, PDFDict, StandardFonts, PDFName } = require('pdf-lib');
+  const signer = require('node-signpdf').default;
+
+  let pdfBuffer = await Drive.get(Helpers.tmpPath('/prueba.pdf'))
+  let pfxBuffer = await Drive.get(Helpers.tmpPath('/texas.p12'))
+
+  const pdfDoc = await PDFDocument.load(pdfBuffer);
+  const page = pdfDoc.getPage(0);
+
+  const form = await pdfDoc.getForm();
+
+  const signPdf = await signer.sign(pdfBuffer, pfxBuffer, {
+    passphrase: 'joserogelio'
+  });
+
+  // guardar
+  await Drive.put(Helpers.tmpPath('/testing.pdf'), Buffer.from(pdfBytes));
+
   return 'ok';
 });
 
+
+
+Route.get('signer', 'SignerController.handle');

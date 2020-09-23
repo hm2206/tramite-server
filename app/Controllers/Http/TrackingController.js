@@ -1,6 +1,7 @@
 'use strict'
 
 const Tracking = use('App/Models/Tracking');
+const Tramite = use('App/Models/Tramite');
 const Config = use('App/Models/Config');
 const { validation, ValidatorError, Storage } = require('validator-error-adonis');
 const { validate } = use('Validator');
@@ -10,6 +11,7 @@ const { LINK, URL } = require('../../../utils');
 const Collect = require('collect.js');
 const moment = require('moment');
 const DB = use('Database');
+const Event = use('Event');
 
 class TrackingController {
 
@@ -269,6 +271,10 @@ class TrackingController {
         tracking.description = description || tracking.description;
         tracking.status = status;
         await tracking.save();
+        // get tramite
+        let tramite = await Tramite.find(tracking.tramite_id);
+        // send email tracking 
+        Event.fire('tracking::notification', request, tramite, tracking);
         // response
         return {
             success: true,

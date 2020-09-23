@@ -11,6 +11,4 @@ Tramite.createTramite = async (request, tramite, email, dependencia) => {
         contenido: `Dependencia destino: <b>${dependencia.nombre}</b>`,
         subject: 'Nuevo trámite'
     });
-    // testing
-    console.log(response);
 }
