@@ -121,7 +121,7 @@ class TramitePublicController {
         code_verify.is_revoked = 1;
         await code_verify.save();
         // send event
-        Event.fire('tramite::new', request, tramite, person.email_contact, dependencia.dependencia);
+        Event.fire('tramite::new', request, tramite, person, person, dependencia.dependencia);
         // response
         return {
             success: true,

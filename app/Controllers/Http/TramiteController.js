@@ -131,7 +131,7 @@ class TramiteController {
         // obtener url
         await tramite.getUrlFile();
         // send event
-        Event.fire('tramite::new', request, tramite, auth.person.email_contact, request._dependencia);
+        Event.fire('tramite::new', request, tramite, person, auth.person, request._dependencia);
         // response
         return {
             success: true,
