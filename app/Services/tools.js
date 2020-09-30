@@ -21,6 +21,7 @@ const getSystemKey = () => Env.get('SYSTEM_KEY') || "";
 
 const API = {
     API_AUTHENTICATION: Env.get('API_AUTHENTICATION') || "",
+    API_SIGNATURE: Env.get('API_SIGNATURE') || "",
 }
 
 // exportart 

@@ -2,7 +2,7 @@ const Drive = use('Drive');
 const { PDFDocument } = require('pdf-lib');
 const Helpers = use('Helpers')
 const codeQR = require('qrcode');
-
+const fs = require('fs');
 
 const addQrPdf = async (filename, pdfRealPath, qrRealpath, numPage = 0, size = { width: 75, height: 75 }) => {
   let pdfRaw = await Drive.get(pdfRealPath);
@@ -44,7 +44,19 @@ const addQrPdfEmbed = async (filename, pdfRealPath, message, numPage = 0, size =
   // generar pdf modificado
   const pdfBytes = await pdfDoc.save();
   // guardar
-  return await Drive.put(Helpers.tmpPath(filename), Buffer.from(pdfBytes));
+  let save = await Drive.put(Helpers.tmpPath(filename), Buffer.from(pdfBytes));
+  // response 
+  if (save) return {
+    success: true,
+    pdfBase: fs.readFileSync(Helpers.tmpPath(filename), 'base64'),
+    path: Helpers.tmpPath(filename)
+  }
+  // res 
+  return {
+    success: false,
+    pdfBase: "",
+    path: ""
+  }
 }
 
 module.exports = {

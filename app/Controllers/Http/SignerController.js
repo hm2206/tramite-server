@@ -5,50 +5,83 @@ const Drive = use('Drive');
 const Helpers = use('Helpers');
 const { PDFDocument, drawRectangle, rgb, degrees, drawImage } = require('pdf-lib');
 const signapdf = require('node-signpdf');
-
-
+const axios = require('axios').default;
+const soap = require('soap');
+const fs = require('fs');
 
 
 class SignerController {
 
-    handle = async ({ request }) => {
-        
-      const signaturePdf = await Drive.get(Helpers.tmpPath('example.pdf'));
+  handle = async ({ request }) => {
+    let url = 'http://192.168.100.7:9864/WsFirmaDigital.svc?singleWsdl';
 
-      const createPdf = async (params) => {
-        const requestParams = {
-            placeholder: {},
-            text: 'node-signpdf',
-            addSignaturePlaceholder: true,
-            pages: 1,
-            ...params,
-        };
-    
-        const pdf = await PDFDocument.create({
-          autoFirstPage: false,
-          size: 'A4',
-          layout: 'portrait'
-        });
-    
-        if (requestParams.pages < 1) {
-            requestParams.pages = 1;
-        }
-    
-        // Add some content to the page(s)
-        for (let i = 0; i < requestParams.pages; i++) {
-              let page = await pdf.addPage();
-        }
-    
-        // Collect the ouput PDF
-        // and, when done, resolve with it stored in a Buffer
-      return await pdf.save();
+    let pdf = fs.readFileSync(Helpers.tmpPath('boleta.pdf'), 'base64');
+
+    process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
+
+    let payload = {
+      Dni: "44156036",
+      ClavePfx: "joserogelio", 
+      FileName: "testing_firma.pdf",
+      ArchivoBase: pdf, 
+      Reason: "Soy el autor del documento", 
+      Location: "Peruano", 
+      AddVisibleSign: true,
+      PageSignature: 1,
+      PathImg: "https://unujobs.com/api_authentication/find_file_local?path=person/img/person_44156036.jpg&update=1600980459497&size=200x200",
+      PositionX: 10,
+      PositionY: 10,
+      Width: 150,
+      Height: 50
     }
 
-    let pdfBuffer = await createPdf();
+    // 7 x 5.94 cm
+    
+    let api = await soap.createClientAsync(url)
+      .then(async client => {
+        return await client.SignHashedAsync(payload)
+      }).then(result => {
+        let [{SignHashedResult}] = result;
+        let [link, direction] = `${SignHashedResult}`.split(';');
+        let parsePath = `${direction}`.split('\\\\').pop();
+        let fileName = `${link}/${parsePath}`.replace('\\', '/');
+        return { 
+          err: null,
+          link: fileName
+        }
+      }).catch(err => ({
+        err
+      }));
 
-    await Drive.put(Helpers.tmpPath('/areli.pdf'), Buffer.from(pdfBuffer));
+    // await soap.createClientAsync(url)
+    //   .then(async client => {
+    //     return await client.CreateFileAsync({ Name: 'fiufiu.pdf', ArchivoBase: pdf })
+    //   }).then(result => {
+    //     console.log(result);
+    //   }).catch(err => {
+    //     console.log(err.message);
+    //     throw new Error("No se pudo firmar el archivo");
+    //   });
 
-    return 'ok';
+    // fs.writeFileSync(Helpers.tmpPath('pdf.text'), Buffer.from(pdf))
+
+    // (url, (err, client) => {
+    //   client.CreateFile(testing, (err, result) => {
+    //     if (err) throw new Error ('Algo salio mal');
+    //     let { CreateFileResult } = result;
+    //     if (CreateFileResult) {
+    //       client.SignHashed(payload, (err, result) => {
+    //         console.log(result);
+    //       }) 
+    //     } else throw new Error('no se puede firmar');
+    //   }
+    return api;
+
+    return {
+      success: true,
+      status: 201,
+      message: "Firma correcta"
+    };
   }
 
 }

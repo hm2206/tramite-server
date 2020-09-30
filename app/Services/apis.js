@@ -18,5 +18,5 @@ const authentication = {
 
 
 module.exports = { 
-    authentication,    
+    authentication,   
 }
