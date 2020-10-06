@@ -29,7 +29,7 @@
     "@pdftron/pdfnet-node": "^8.0.0",
     "axios": "^0.19.2",
     "blob": "^0.1.0",
-    "ccffigueroa-signature": "^1.0.9",
+    "ccffigueroa-signature": "^1.1.0",
     "collect.js": "^4.28.2",
     "moment": "^2.27.0",
     "mysql": "^2.18.1",
