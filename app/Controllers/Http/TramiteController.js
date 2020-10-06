@@ -112,7 +112,6 @@ class TramiteController {
                         fs.unlinkSync(f.realPath);
                         return err;
                     });
-                console.log(signed);
                 // validar firma
                 if (signed.err) throw new Error(signed.err.message);
                 // obtener pdf

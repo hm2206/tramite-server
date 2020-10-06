@@ -30,7 +30,6 @@ class DependenciaProvider {
       // call next to advance the request
       await next()
     } catch (error) {
-      console.log(error);
       return response.send({
         success: false,
         status: error.status || 501,
