@@ -8,11 +8,11 @@ const uid = require('uid')
 const Helpers = use('Helpers')
 const { LINK } = require('../../../utils')
 const Event = use('Event');
-const { API_SIGNATURE } = require('../../Services/tools').API;
-const { SignHashed } = require('ccffigueroa-signature');
 const axios = require('axios').default;
 const Drive = use('Drive');
 const fs = require('fs');
+const FormData = require('form-data');
+const concat = require('concat-stream');
 
 class TramiteController {
 
@@ -76,50 +76,40 @@ class TramiteController {
         for (let f of file.files) {
             let newLink = await LINK('tmp', f.path);
             tmpFile.push(newLink);
-            // save password
-            let password_signatured = "";
             // firmar pdf
             let signInfo = JSON.parse(info_signature[indexT]) || {};
             // enviar firma
             if (signInfo.signed) {
-                // configuración de la firma digital
-                if (indexT == 0) {
-                    // validar firma 
-                    await validation(validate, request.all(), {
-                        code: 'required|min:10|max:10'
-                    });
-                    // validar código
-                    await request.api_authentication.post(`code_authorization/${person.id}/validate`, { code: request.input('code') })
-                        .then(res => {
-                            let { success, message, datos } = res.data;
-                            if (!success) throw new Error(message);
-                            password_signatured = datos.password_signatured;
-                        });
-                }
-                // info
-                let info = {
-                    Reason: "Yo soy el firmante", 
-                    Location: dependencia.nombre || "PE", 
-                    AddVisibleSign: signInfo.visible || false, 
-                    PageSignature: parseInt(signInfo.page) || 1, 
-                    PathImg: signInfo.image || auth.image,
-                    Pos: signInfo.position || 0,
-                }
-                // firmar
-                let signed = await SignHashed(API_SIGNATURE, person.document_number, password_signatured, `${slug}_${f.name}`, f.base64, info)
-                    .then(res => res)
-                    .catch(err => {
-                        fs.unlinkSync(f.realPath);
-                        return err;
-                    });
-                // validar firma
-                if (signed.err) throw new Error(signed.err.message);
-                // obtener pdf
-                await axios.get(signed.link, { responseType: 'arraybuffer' })
-                    .then(async resBlob => {
-                        await Drive.delete(f.realPath);
-                        await Drive.put(f.realPath, Buffer.from(resBlob.data));
-                    });
+                // form data
+                let form = new FormData();
+                form.append('reason', request.input('asunto'));
+                form.append('location', dependencia.nombre || "PE"); 
+                form.append('visible', signInfo.visible || 'false'); 
+                form.append('page', `${signInfo.page}` || "1");
+                form.append('position', `${signInfo.position}` || "0");
+                form.append('file', fs.createReadStream(f.realPath));
+                console.log(form);
+                // config signer
+                const firmar = new Promise((resolve, reject) => {
+                    form.pipe(concat({ encoding: 'buffer' }, async (data) => {
+                        return await request.api_signature.post(`signer/${request.input('person_id')}`, data, {
+                            responseType: 'arraybuffer',
+                            headers: form.getHeaders()
+                        }).then(res => {
+                           resolve(res);
+                        }).catch(err => {
+                            fs.unlinkSync(f.realPath);
+                            reject(err);
+                         });
+                    }));
+                });
+                // execute signer
+                await firmar.then(async res => {
+                    await Drive.put(f.realPath, Buffer.from(res.data));
+                }).catch(err => {
+                    console.log(err.response.data);
+                    throw new Error("No se pudo firmar el pdf");
+                });
             }
             // next file
             indexT++;
