@@ -88,7 +88,6 @@ class TramiteController {
                 form.append('page', `${signInfo.page}` || "1");
                 form.append('position', `${signInfo.position}` || "0");
                 form.append('file', fs.createReadStream(f.realPath));
-                console.log(form);
                 // config signer
                 const firmar = new Promise((resolve, reject) => {
                     form.pipe(concat({ encoding: 'buffer' }, async (data) => {
