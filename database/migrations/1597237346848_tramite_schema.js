@@ -14,8 +14,9 @@ class TramiteSchema extends Schema {
       table.string('document_number').notNullable();
       table.integer('tramite_type_id').notNullable();
       table.integer('folio_count').notNullable();
-      table.text('asunto').notNullable();
+      table.string('asunto').notNullable();
       table.json('files').notNullable();
+      table.text('observation');
       table.integer('dependencia_id').notNullable();
       table.integer('dependencia_origen_id');
       table.boolean('state').defaultTo(true);

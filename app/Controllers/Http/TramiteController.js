@@ -107,7 +107,6 @@ class TramiteController {
                 await firmar.then(async res => {
                     await Drive.put(f.realPath, Buffer.from(res.data));
                 }).catch(err => {
-                    console.log(err.response.data);
                     throw new Error("No se pudo firmar el pdf");
                 });
             }
