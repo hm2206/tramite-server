@@ -29,7 +29,7 @@ class TrackingController {
      * @param {*} param0 
      */
     my_tray = async ({ request }) => {
-        let auth = request.$auth;
+        let auth = await request.$auth;
         let tracking = await this._getTramiteTracking({ request, user_id: auth.id });
         return this._configTrackings({ request, tracking });
     }

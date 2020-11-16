@@ -1,7 +1,7 @@
 'use strict'
 
 const { validation, ValidatorError, Storage } = require('validator-error-adonis');
-const { validate } = use('Validator');
+const { validate, validateAll } = use('Validator');
 const TramiteType = use('App/Models/TramiteType');
 const Tramite = use('App/Models/Tramite');
 const uid = require('uid')
@@ -17,12 +17,11 @@ const concat = require('concat-stream');
 class TramiteController {
 
     store = async ({ request }) => {
-        await validation(validate, request.all(), {
+        await validation(validateAll, request.all(), {
             tramite_type_id: 'required|max:11',
             document_number: 'required|min:4|max:255',
             folio_count: 'required|min:1|max:10',
             asunto: 'required|min:4',
-            info_signature: 'required',
             person_id: 'required'
         });
         // obtener tramite documento
@@ -71,49 +70,10 @@ class TramiteController {
         });
         // add files
         let tmpFile = [];
-        let indexT = 0;
-        // add files
-        for (let f of file.files) {
-            let newLink = await LINK('tmp', f.path);
-            tmpFile.push(newLink);
-            // firmar pdf
-            let signInfo = JSON.parse(info_signature[indexT]) || {};
-            // enviar firma
-            if (signInfo.signed) {
-                // form data
-                let form = new FormData();
-                form.append('reason', request.input('asunto'));
-                form.append('location', dependencia.nombre || "PE"); 
-                form.append('visible', signInfo.visible || 'false'); 
-                form.append('page', `${signInfo.page}` || "1");
-                form.append('position', `${signInfo.position}` || "0");
-                form.append('file', fs.createReadStream(f.realPath));
-                // config signer
-                const firmar = new Promise((resolve, reject) => {
-                    form.pipe(concat({ encoding: 'buffer' }, async (data) => {
-                        return await request.api_signature.post(`signer/${request.input('person_id')}`, data, {
-                            responseType: 'arraybuffer',
-                            headers: form.getHeaders()
-                        }).then(res => {
-                           resolve(res);
-                        }).catch(err => {
-                            fs.unlinkSync(f.realPath);
-                            reject(err);
-                         });
-                    }));
-                });
-                // execute signer
-                await firmar.then(async res => {
-                    await Drive.put(f.realPath, Buffer.from(res.data));
-                }).catch(err => {
-                    throw new Error("No se pudo firmar el pdf");
-                });
-            }
-            // next file
-            indexT++;
-        }
+        // validar files y agregar file
+        if (file.success) await file.files.map(async f => await tmpFile.push(LINK("tmp", f.path)));
         // add file 
-        payload.files = JSON.stringify(await tmpFile);
+        payload.files = JSON.stringify(tmpFile || []);
         // guardar tramite
         let tramite = await Tramite.create(payload);
         // obtener url
