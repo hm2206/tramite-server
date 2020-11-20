@@ -29,7 +29,7 @@ Tracking.notification = async (request, tramite, tracking) => {
                 header: tracking.status,
                 username: `Código: ${tramite.slug}`,
                 contenido: `
-                    Dependencia destino: <b>${dependencia.nombre}</b></br>
+                    Dependencia destino: <b>${dependencia.nombre}</b> <br/>
                     Asunto: <b>${tramite.asunto}</b>
                 `,
                 subject: 'Seguimiento de trámite'
@@ -42,7 +42,7 @@ Tracking.notification = async (request, tramite, tracking) => {
             header: tracking.status,
             username: `Código: ${tramite.slug}`,
             contenido: `
-                Dependencia destino: <b>${dependencia.nombre}</b></br>
+                Dependencia destino: <b>${dependencia.nombre}</b> <br/>
                 Asunto: <b>${tramite.asunto}</b>
             `,
             subject: 'Mi Seguimiento'
