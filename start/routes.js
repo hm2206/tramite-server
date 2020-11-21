@@ -58,6 +58,9 @@ addGroup(Route.group(() => {
   // Ruta de reportes
   Route.get('/report/ticket', 'Report/TicketController.handle');
 
+  // Ruta para validar tramite
+  Route.post('/tramite/:id/verify', 'VerifyController.handle').middleware(['allow:VerifyController.handle', 'jwt']);
+
 }));
 
 

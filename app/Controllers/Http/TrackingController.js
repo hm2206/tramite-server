@@ -59,7 +59,7 @@ class TrackingController {
                 'trackings.status', 'trackings.parent', 'tra.created_at',
                 'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 
                 'tra.files as tramite_files', 'trackings.files', 'type.description as tramite_type',
-                'trackings.updated_at'
+                'trackings.updated_at', 'tra.verify', 'trackings.tramite_id'
             ).orderBy('trackings.updated_at', status_asc.includes(status) ? 'ASC' : 'DESC')
             .paginate(page || 1, 20);
         // to JSON
@@ -315,6 +315,7 @@ class TrackingController {
             .where('trackings.id', params.id)
             .where('trackings.current', 1)
             .where('trackings.parent', parent)
+            .where('tra.verify', 1)
             .select('trackings.*', 'tra.slug')
             .first();
         // validar tracking

@@ -1,18 +1,13 @@
 'use strict'
 
 const { validation, ValidatorError, Storage } = require('validator-error-adonis');
-const { validate, validateAll } = use('Validator');
+const { validateAll } = use('Validator');
 const TramiteType = use('App/Models/TramiteType');
 const Tramite = use('App/Models/Tramite');
 const uid = require('uid')
 const Helpers = use('Helpers')
 const { LINK } = require('../../../utils')
 const Event = use('Event');
-const axios = require('axios').default;
-const Drive = use('Drive');
-const fs = require('fs');
-const FormData = require('form-data');
-const concat = require('concat-stream');
 
 class TramiteController {
 
@@ -26,7 +21,6 @@ class TramiteController {
         });
         // obtener tramite documento
         let type = await TramiteType.find(request.input('tramite_type_id'));
-        let info_signature = request.input('info_signature', []);
         if (!type) throw new ValidatorError([{ field: 'tramite_type_id', message: 'EL tipo de tramite es incorrecto' }]);
         // generar slug
         let slug = `${type.short_name}${uid(10)}`.toUpperCase().substr(0, 10);
@@ -47,14 +41,15 @@ class TramiteController {
         let payload = {
             user_id: auth.id,
             entity_id: request._entity.id,
-            dependencia_id: request._dependencia.id,
+            dependencia_id: dependencia.id,
             person_id: person.id,
             slug,
             document_number: request.input('document_number'),
             tramite_type_id: request.input('tramite_type_id'),
             folio_count: request.input('folio_count'),
             asunto: request.input('asunto'),
-            dependencia_origen_id: request._dependencia.id
+            dependencia_origen_id: request._dependencia.id,
+            verify: person.id == auth.person_id ? 1 : 0
         }
         // guardar file
         let file = await Storage.saveFile(request, 'files', {
