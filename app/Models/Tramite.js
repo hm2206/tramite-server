@@ -15,6 +15,10 @@ class Tramite extends Model {
         return this.belongsTo('App/Models/TramiteType');
     }
 
+    tracking = () => {
+        return this.hasMany('App/Models/Tracking');
+    }
+
     getUrlFile = (up = false) => {
         this.file = URL(this.file, up);
     }

@@ -27,6 +27,7 @@
     "@adonisjs/lucid": "^6.1.3",
     "@adonisjs/validator": "^5.0.6",
     "@pdftron/pdfnet-node": "^8.0.0",
+    "@ruanitto/adonis-report-builder": "^1.0.3",
     "axios": "^0.19.2",
     "blob": "^0.1.0",
     "ccffigueroa-signature": "^1.1.1",

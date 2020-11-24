@@ -373,7 +373,7 @@ class TrackingController {
         // validar dependencia interna
         if (request.input('dependencia_destino_id') == request._dependencia.id) {
             if (!request.input('user_destino_id')) throw new ValidatorError([{ field: 'user_destino_id', message: 'El destinatario es obligatorio' }]);
-            if (request.input('user_destino_id') == request.$auth.id) throw new ValidatorError([{ field: 'user_destino_id', message: 'Usted no puede se el destinatario' }]);
+            if (request.input('user_destino_id') == request.$auth.id) throw new ValidatorError([{ field: 'user_destino_id', message: 'Usted no puede ser el destinatario' }]);
         }
         // change status
         payload.status = 'ENVIADO';

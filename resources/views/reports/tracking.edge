@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Seguimiento de trámite</title>
+    {{ style(urlReport("css/bootstrap.min.css")) }}
+    {{ style(urlReport("css/app.css")) }}
+</head>
+<body>
+
+    <div class="header-code-qr">
+        <img src="{{ code_qr }}" style="width:100%;height:100%;object-fit:contain;"/>
+    </div>
+
+    <div class="container mt-5 mb-5">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <br>
+
+                <h5><u>Seguimiento de Trámite</u></h5>
+
+                <br><br><br>
+
+                <table class="table mt-5">
+                    <thead>
+                        <tr>
+                            <th>CÓDIGO</th>
+                            <td><b>:</b> {{ tramite.slug }}</td>
+                            <th>F. REGISTRO</th>
+                            <td><b>:</b> {{ moment(tramite.created_at).format('DD/MM/YYYY') }}</td>
+                        </tr>
+                        <tr>
+                            <th>DEPENDENCIA ORIGEN</th>
+                            <td colspan="3" class="uppercase"><b>:</b> {{ tramite.dependencia && tramite.dependencia.nombre || "EXTERIOR" }}</td>
+                        </tr>
+                        <tr>
+                            <th>ASUNTO</th>
+                            <td colspan="3"><b>:</b> {{ tramite.asunto }}</td>
+                        </tr>
+                        <tr>
+                            <th>TIPO DOCUMENTO</th>
+                            <td><b>:</b> {{ tramite.tramite_type && tramite.tramite_type.description || "" }}</td>
+                            <th>N° DOCUMENTO</th>
+                            <td><b>:</b> {{ tramite.document_number }}</td>
+                        </tr>
+                        <tr>
+                            <th colspan="4" class="text-center">DATOS DEL REMITENTE</td>
+                        </tr>
+                            <th>APELLIDOS Y NOMBRES</th>
+                            <td class="uppercase" colspan="3"><b>:</b> {{ person && person.fullname || "" }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ person && person.document_type || "N° DOCUMENTO" }}:</th>
+                            <td><b>:</b> {{ person.document_number || "" }}</td>
+                            <th>CORREO:</th>
+                            <td><b>:</b> {{ person.email_contact || "" }}</td>
+                        </tr>
+                    </thead>
+                </table>
+               
+                <ul class="timeline mt-5">
+                    @each(track in tramite.tracking)
+                        <li>
+                            <a target="_blank" href="https://www.totoprayogo.com/#">{{ track.status }}</a>
+                            <a href="#" class="float-right">{{ track.updated_at ? moment(track.updated_at).lang('es').format('LL') : "" }}</a>
+                            <p>
+                                <b><u>DEPENDENCIA DESTINO:</u></b>
+                                <span class="uppercase ml-2">{{ track.dependencia && track.dependencia.nombre || "" }}</span>
+                            </p>
+                            
+                            <p>
+                                <b><u>DESCRIPCIÓN:</u></b>
+                                <span class="ml-2">{{ track.description || "" }}</span>
+                            </p>
+                        </li>
+                    @endeach
+                </ul>
+            </div>
+        </div>
+    </div>
+
+<div class="text-muted mt-5 mb-5 text-center small">Desarrollado por : <a class="text-muted" target="_blank" href="{{ $system.support_link }}">{{ $system.support_name  }}</a></div>
+</body>
+</html>

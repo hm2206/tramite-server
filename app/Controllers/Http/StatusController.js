@@ -16,7 +16,8 @@ class StatusController {
     }
 
     bandeja = async ({ request }) => {
-        let status = await this._getAllowStatus({ request, user_destino_id: request.$auth.id });
+        let auth = request.$auth;
+        let status = await this._getAllowStatus({ request, user_destino_id: auth.id, person_id: auth.person_id });
         // response
         return {
             success: true,
@@ -26,7 +27,7 @@ class StatusController {
         }
     }
 
-    _getAllowStatus = async ({ request, user_destino_id }) => {
+    _getAllowStatus = async ({ request, user_destino_id, person_id }) => {
         let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'ENVIADO', 'DERIVADO', 'ANULADO']);
         // select dinamico
         let select_status = [];
@@ -38,7 +39,7 @@ class StatusController {
                 .where('tra.status', allow)
                 .select(DB.raw(`count(tra.status)`))
             // filter user_destino_id
-            if (user_destino_id) raw_status.where('tra.user_destino_id', user_destino_id);
+            if (user_destino_id) raw_status.whereRaw(`(tra.user_destino_id = ${user_destino_id} OR t.person_id = ${person_id})`);
             else raw_status.whereNull('tra.user_destino_id');
             // add select
             select_status.push(`(${raw_status}) as ${allow}`);
