@@ -23,18 +23,20 @@ class VerifyController {
         // validar
         if (!tramite) throw new Error("No se encontró el tramite");
         // guardar archivos
-        let files = await Storage.saveFile(request, "files", {
-            extnames: ['pdf'],
-            required: false,
-            multifiles: true
-        }, Helpers, {
-            path: `/tramite/${tramite.slug}`,
-            options: {
-                overwrite: true 
-            }
-        });
-        // validar archivos
-        if (!files.success) throw new Error("No se pudo guardar todos los archivos");
+        if (request.file('files')) {
+            let files = await Storage.saveFile(request, "files", {
+                extnames: ['pdf'],
+                required: false,
+                multifiles: true
+            }, Helpers, {
+                path: `/tramite/${tramite.slug}`,
+                options: {
+                    overwrite: true 
+                }
+            });
+            // validar archivos
+            if (!files.success) throw new Error("No se pudo guardar todos los archivos");
+        }
         tramite.verify = 1;
         tramite.verify_observation = request.input('verify_observation');
         // verificar el trámite

@@ -30,7 +30,7 @@ class TrackingController {
      */
     my_tray = async ({ request }) => {
         let auth = await request.$auth;
-        let tracking = await this._getTramiteTracking({ request, user_id: auth.id });
+        let tracking = await this._getTramiteTracking({ request, user_id: auth.id, person_id: auth.person_id });
         return this._configTrackings({ request, tracking });
     }
 
@@ -38,7 +38,7 @@ class TrackingController {
      * obtener el tracking del tramite
      * @param {*} param0 
      */
-    _getTramiteTracking = async ({ request, user_id }) => {
+    _getTramiteTracking = async ({ request, user_id, person_id }) => {
         let { page, status, query_search } = request.all();
         let status_asc = ['PENDIENTE', 'REGISTRADO', 'ENVIADO'];
         // get tracking
@@ -50,7 +50,7 @@ class TrackingController {
         // filtros
         if (status) tracking.where('status', status);
         if (query_search) tracking.where('tra.slug', 'like', `%${query_search}%`);
-        if (user_id) tracking.where('trackings.user_destino_id', user_id);
+        if (user_id) tracking.whereRaw(`(trackings.user_destino_id = ${user_id} OR tra.person_id = ${person_id})`);
         else tracking.whereNull('trackings.user_destino_id');
         // get paginate
         tracking = await tracking.select(

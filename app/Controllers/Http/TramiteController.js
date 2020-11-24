@@ -8,6 +8,8 @@ const uid = require('uid')
 const Helpers = use('Helpers')
 const { LINK } = require('../../../utils')
 const Event = use('Event');
+const codeQR = require('qrcode');
+const Env = use('Env');
 
 class TramiteController {
 
@@ -82,6 +84,25 @@ class TramiteController {
             code: 'RES_SUCCESS',
             message: 'El tramite se creó correctamente',
             tramite
+        }
+    }
+
+    // generar código QR
+    codeQr = async ({ params, response }) => {
+        try {
+            let tramite = await Tramite.find(params.id);
+            if (!tramite) throw new Error("No se encontró el tramite");
+            let link = `${Env.get('CLIENT_TRAMITE')}?slug=${tramite.slug}`;
+            let code = await codeQR.toBuffer(link);
+            response.header('Content-Type', 'image/png')
+            return response.send(code);
+        } catch (error) {
+            response.status(error.status || 501);
+            return response.send({
+                success: false,
+                status: error.status || 501,
+                message: error.message
+            })
         }
     }
 

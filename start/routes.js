@@ -1,7 +1,5 @@
 'use strict'
 
-const { pdfkitAddPlaceholder } = require('node-signpdf/dist/helpers');
-
 const Route = use('Route')
 
 // customizar group
@@ -23,6 +21,7 @@ addGroup(Route.group(() => {
 
   // Ruta de Tramite
   Route.post('/tramite', 'TramiteController.store').middleware(['allow:TramiteController.store', 'jwt', 'entityId', 'dependenciaId']);
+  Route.get('/tramite/:id/code_qr', 'TramiteController.codeQr').middleware(['allow:TramiteController.codeQr', 'jwt']);
 
   // Ruta de Traking del documento
   Route.get('/tracking', 'TrackingController.index').middleware(['allow:TrackingController.index', 'jwt', 'entityId', 'dependenciaId']);
@@ -62,62 +61,6 @@ addGroup(Route.group(() => {
   Route.post('/tramite/:id/verify', 'VerifyController.handle').middleware(['allow:VerifyController.handle', 'jwt']);
 
 }));
-
-
-
-
-// Route.get('testing_pdf', async () => {
-  
-//   const Drive = use('Drive');
-//   const Helpers = use('Helpers');
-//   const { PDFDocument, PDFDict, StandardFonts, PDFName } = require('pdf-lib');
-
-//   let pdfBuffer = await Drive.get(Helpers.tmpPath('/prueba.pdf'))
-//   let pfxBuffer = await Drive.get(Helpers.tmpPath('/texas.pfx'))
-
-//   const pdfDoc = await PDFDocument.load(pdfBuffer);
-//   const page = pdfDoc.getPage(0);
-
-//   const form = await pdfDoc.getForm();
-
-//   // const superheroField = form.createTextField('Signature1')
-//   console.log(pdfDoc)
-
-//   const pdfBytes = await pdfDoc.save()
-  
-//   // guardar
-//   // await Drive.put(Helpers.tmpPath('/testing.pdf'), Buffer.from(pdfBytes));
-
-//   return 'ok';
-// });
-
-
-Route.get('testing_pdf', async () => {
-  
-  return 'ok';
-  const Drive = use('Drive');
-  const Helpers = use('Helpers');
-  const { PDFDocument, PDFDict, StandardFonts, PDFName } = require('pdf-lib');
-  const signer = require('node-signpdf').default;
-
-  let pdfBuffer = await Drive.get(Helpers.tmpPath('/prueba.pdf'))
-  let pfxBuffer = await Drive.get(Helpers.tmpPath('/texas.p12'))
-
-  const pdfDoc = await PDFDocument.load(pdfBuffer);
-  const page = pdfDoc.getPage(0);
-
-  const form = await pdfDoc.getForm();
-
-  const signPdf = await signer.sign(pdfBuffer, pfxBuffer, {
-    passphrase: 'joserogelio'
-  });
-
-  // guardar
-  await Drive.put(Helpers.tmpPath('/testing.pdf'), Buffer.from(pdfBytes));
-
-  return 'ok';
-});
-
 
 
 Route.get('signer', 'SignerController.handle');
