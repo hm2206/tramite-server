@@ -59,7 +59,7 @@ class TrackingController {
                 'trackings.status', 'trackings.parent', 'tra.created_at',
                 'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 
                 'tra.files as tramite_files', 'trackings.files', 'type.description as tramite_type',
-                'trackings.updated_at', 'tra.verify', 'trackings.tramite_id'
+                'trackings.updated_at', 'tra.verify', 'trackings.tramite_id', 'trackings.alert'
             ).orderBy('trackings.updated_at', status_asc.includes(status) ? 'ASC' : 'DESC')
             .paginate(page || 1, 20);
         // to JSON
@@ -149,7 +149,8 @@ class TrackingController {
             dependencia_origen_id: request._dependencia.id,
             dependencia_destino_id: request.input('dependencia_destino_id'),
             current: 1,
-            parent: 0
+            parent: 0,
+            alert: 0
         }
         // validar status
         if (allow_verification.includes(status)) {
@@ -273,8 +274,22 @@ class TrackingController {
         await tracking.save();
         // get tramite
         let tramite = await Tramite.find(tracking.tramite_id);
+        tramite.verify = true;
+        tramite.alert = false;
+        await tramite.save();
         // send email tracking 
         Event.fire('tracking::notification', request, tramite, tracking);
+        // generar pendiente cuando se rechaza un documento
+        if (status == 'RECHAZADO') {
+            let newPendiente = JSON.parse(JSON.stringify(payload));
+            newPendiente.dependencia_id = newPendiente.dependencia_origen_id;
+            newPendiente.dependencia_destino_id = newPendiente.dependencia_origen_id;
+            newPendiente.alert = true;
+            newPendiente.status = 'PENDIENTE';
+            newPendiente.current = 1;
+            newPendiente.parent = 1;
+            await Tracking.create(newPendiente);
+        }
         // response
         return {
             success: true,
@@ -315,11 +330,12 @@ class TrackingController {
             .where('trackings.id', params.id)
             .where('trackings.current', 1)
             .where('trackings.parent', parent)
-            .where('tra.verify', 1)
-            .select('trackings.*', 'tra.slug')
+            .select('trackings.*', 'tra.slug', 'tra.person_id')
             .first();
         // validar tracking
         if (!tracking) throw new Error('No se encontró el tracking del tramite')
+        // verificar si tiene permiso 
+        if (!tracking.verify) if (tracking.person_id != request.$auth.person_id) throw new Error('El trámite no está verificado!');
         // response tracking
         return tracking;
     }

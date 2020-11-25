@@ -4,6 +4,7 @@ const Tramite = use('App/Models/Tramite');
 const Helpers = use('Helpers');
 const { validateAll } = use('Validator');
 const { Storage, validation } = require('validator-error-adonis');
+const Event = use('Event');
 
 class VerifyController {
 
@@ -37,10 +38,13 @@ class VerifyController {
             // validar archivos
             if (!files.success) throw new Error("No se pudo guardar todos los archivos");
         }
+        // actualizar
         tramite.verify = 1;
         tramite.verify_observation = request.input('verify_observation');
         // verificar el trámite
         await tramite.save();
+        // enviar tramite
+        await Event.fire("tramite::verify", request, tramite);
         // response
         return { 
             success: true,
