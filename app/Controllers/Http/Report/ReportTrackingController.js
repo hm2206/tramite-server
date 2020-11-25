@@ -46,11 +46,11 @@ class ReportTrackingController {
                 person
             });
             // generar
-            // await ReportBuilder.loadHTML(html);
-            // const bufferResult = await ReportBuilder.outputBuffer();
-            // response.header('Content-Type', 'application/pdf');
-            // return response.send(bufferResult);
-            return html;
+            await ReportBuilder.loadHTML(html);
+            const bufferResult = await ReportBuilder.outputBuffer();
+            response.header('Content-Type', 'application/pdf');
+            return response.send(bufferResult);
+            // return html;
         } catch (error) {
             return response.status(error.status || 501)
                 .send({
