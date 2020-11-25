@@ -20,7 +20,7 @@ class ReportTrackingController {
                 .first();
             if (!tramite) throw new Error("No se encontró el tramite");
             tramite = await tramite.toJSON();
-            let link = `${Env.get('TRAMITE_CLIENT')}?slug=${tramite.slug}`;
+            let link = `${Env.get('CLIENT_TRAMITE')}?slug=${tramite.slug}`;
             let code_qr = await codeQR.toDataURL(link)
             // obtener remitento
             let person = await request.api_authentication.get(`find_person/${tramite.person_id}`)
