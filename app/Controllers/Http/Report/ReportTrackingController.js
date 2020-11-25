@@ -48,7 +48,7 @@ class ReportTrackingController {
             // generar
             await ReportBuilder.loadHTML(html);
             const bufferResult = await ReportBuilder.outputBuffer();
-            response.header('Content-Type', 'application/pdf');
+            // response.header('Content-Type', 'application/pdf');
             return response.send(bufferResult);
         } catch (error) {
             return response.status(error.status || 501)
