@@ -28,12 +28,12 @@ class ReportTrackingController {
                 .catch(err => ({}));
             // obtener trackings
             let trackings = collect(JSON.parse(JSON.stringify(tramite.tracking)));
-            trackings.push({ dependencia_origen_id: tramite.dependencia_id });
+            trackings.push({ dependencia_destino_id: tramite.dependencia_id });
             // obtener dependencias
-            let dependencias = await this._getDependencias(request, trackings.groupBy('dependencia_origen_id').keys().toArray());
+            let dependencias = await this._getDependencias(request, trackings.groupBy('dependencia_destino_id').keys().toArray());
             // setting datos
             await tramite.tracking.map(track => {
-                track.dependencia = dependencias.where("id", track.dependencia_origen_id).first() || {};
+                track.dependencia_destino = dependencias.where("id", track.dependencia_destino_id).first() || {};
                 return track;
             });
             // agregar dependencia tramite
