@@ -42,6 +42,8 @@ class SystemProvider {
     });
     // system
     View.global('$system', request._system);
+    // env
+    View.global('Env', Env);
   }
 }
 

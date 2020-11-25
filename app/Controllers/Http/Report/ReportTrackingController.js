@@ -27,7 +27,7 @@ class ReportTrackingController {
                 .then(res => res.data)
                 .catch(err => ({}));
             // obtener trackings
-            let trackings = collect(tramite.tracking);
+            let trackings = collect(JSON.parse(JSON.stringify(tramite.tracking)));
             trackings.push({ dependencia_origen_id: tramite.dependencia_id });
             // obtener dependencias
             let dependencias = await this._getDependencias(request, trackings.groupBy('dependencia_origen_id').keys().toArray());
@@ -43,12 +43,11 @@ class ReportTrackingController {
                 tramite,
                 code_qr,
                 moment,
-                person
+                person,
             });
             // generar
             await ReportBuilder.loadHTML(html);
             const bufferResult = await ReportBuilder.outputBuffer();
-            console.log(bufferResult);
             response.header('Content-Type', 'application/pdf');
             return response.send(bufferResult);
         } catch (error) {
