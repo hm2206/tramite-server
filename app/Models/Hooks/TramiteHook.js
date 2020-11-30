@@ -32,4 +32,7 @@ TramiteHook.createTracking = async (tramite) => {
         next: 0,
         user_verify_id
     });
+    // actualizar verify
+    tramite.verify = 0;
+    await tramite.save();
 }

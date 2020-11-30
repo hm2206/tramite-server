@@ -294,6 +294,8 @@ class TrackingController {
             newPendiente.current = 1;
             newPendiente.parent = 1;
             await Tracking.create(newPendiente);
+            tramite.verify = false;
+            await tramite.save();
         }
         // response
         return {

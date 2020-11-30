@@ -25,6 +25,7 @@ addGroup(Route.group(() => {
   Route.get('/tramite/:id/code_qr', 'TramiteController.codeQr').middleware(['allow:TramiteController.codeQr', 'jwt']);
   Route.post('/tramite/:id/delete_file', 'TramiteController.deleteFile').middleware(['allow:TramiteController.deleteFile', 'jwt', 'entityId', 'dependenciaId']);
   Route.post('/tramite/:id/update_file', 'TramiteController.updateFile').middleware(['allow:TramiteController.updateFile', 'jwt', 'entityId', 'dependenciaId']);
+  Route.post('/tramite/:id/attach_file', 'TramiteController.attachFile').middleware(['allow:TramiteController.attachFile', 'jwt', 'entityId', 'dependenciaId']);
 
   // Ruta de Traking del documento
   Route.get('/tracking', 'TrackingController.index').middleware(['allow:TrackingController.index', 'jwt', 'entityId', 'dependenciaId']);

@@ -6,7 +6,7 @@ const TramiteType = use('App/Models/TramiteType');
 const Tramite = use('App/Models/Tramite');
 const uid = require('uid')
 const Helpers = use('Helpers')
-const { LINK } = require('../../../utils')
+const { LINK, URL } = require('../../../utils')
 const Event = use('Event');
 const codeQR = require('qrcode');
 const Env = use('Env');
@@ -131,7 +131,7 @@ class TramiteController {
 
     // eliminar archivo
     deleteFile = async ({ params, request }) => {
-        let tramite = await Tramite.query().where("verify", 0).find(params.id);
+        let tramite = await Tramite.query().where("verify", 0).where("id", params.id).first();
         let index = request.input('index');
         let files = JSON.parse(tramite.files) || [];
         if (files.length > 1) {
@@ -153,7 +153,7 @@ class TramiteController {
 
     // actualizar archivo
     updateFile = async ({ params, request }) => {
-        let tramite = await Tramite.query().where("verify", 0).find(params.id);
+        let tramite = await Tramite.query().where("verify", 0).where("id", params.id).first();
         if (!tramite) throw new Error("No se encontró el trámite!"); 
         let index = request.input('index');
         let files = JSON.parse(tramite.files) || [];
@@ -180,13 +180,14 @@ class TramiteController {
         return {
             success: true,
             status: 201,
-            message: "El archivo se actualizo correctamente!"
+            message: "El archivo se actualizo correctamente!",
+            file: URL(current_file, true)
         };
     }
 
     // actualizar archivo
     attachFile = async ({ params, request }) => {
-        let tramite = await Tramite.query().where("verify", 0).find(params.id);
+        let tramite = await Tramite.query().where("verify", 0).where("id", params.id).first();
         if (!tramite) throw new Error("No se encontró el trámite!"); 
         let files = JSON.parse(tramite.files) || [];
         // nuevo archivo
@@ -202,7 +203,7 @@ class TramiteController {
         // verificar el guardado del archivo
         if (!newFile.success) throw new Error(newFile.message);
         // actualizar ruta
-        current_file = `file?disk=tmp&path=${newFile.path}`;
+        let current_file = `file?disk=tmp&path=${newFile.path}`;
         files.push(current_file);
         tramite.files = JSON.stringify(files);
         await tramite.save();
@@ -210,7 +211,8 @@ class TramiteController {
         return {
             success: true,
             status: 201,
-            message: "El archivo se actualizo correctamente!"
+            message: "El archivo se actualizo correctamente!",
+            file: URL(current_file)
         };
     }
 }
