@@ -11,6 +11,7 @@ class TrackingSchema extends Schema {
       table.json('files');
       table.integer('user_id');
       table.integer('user_destino_id');
+      table.integer('user_verify_id');
       table.integer('tramite_id').notNullable();
       table.integer('dependencia_id').notNullable(); 
       table.integer('dependencia_origen_id').notNullable();
@@ -18,6 +19,7 @@ class TrackingSchema extends Schema {
       table.boolean('current').defaultTo(true);
       table.boolean('parent').defaultTo(false);
       table.boolean('alert').defaultTo(false);
+      table.boolean('next').defaultTo(true);
       table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'ENVIADO', 'RESPONDIDO', 'COPIA']).defaultTo('PENDIENTE');
       table.boolean('state').defaultTo(true);
       table.timestamps()

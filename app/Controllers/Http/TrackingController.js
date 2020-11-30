@@ -3,6 +3,7 @@
 const Tracking = use('App/Models/Tracking');
 const Tramite = use('App/Models/Tramite');
 const Config = use('App/Models/Config');
+const Role = use('App/Models/Role');
 const { validation, ValidatorError, Storage } = require('validator-error-adonis');
 const { validate } = use('Validator');
 const uid = require('uid');
@@ -10,6 +11,7 @@ const Helpers = use('Helpers');
 const { LINK, URL } = require('../../../utils');
 const Collect = require('collect.js');
 const moment = require('moment');
+const { error } = require('pdf-lib');
 const DB = use('Database');
 const Event = use('Event');
 
@@ -50,7 +52,7 @@ class TrackingController {
         // filtros
         if (status) tracking.where('status', status);
         if (query_search) tracking.where('tra.slug', 'like', `%${query_search}%`);
-        if (user_id) tracking.whereRaw(`(trackings.user_destino_id = ${user_id} OR tra.person_id = ${person_id})`);
+        if (user_id) tracking.whereRaw(`(trackings.user_destino_id = ${user_id} OR trackings.user_verify_id = ${user_id})`);
         else tracking.whereNull('trackings.user_destino_id');
         // get paginate
         tracking = await tracking.select(
@@ -59,7 +61,8 @@ class TrackingController {
                 'trackings.status', 'trackings.parent', 'tra.created_at',
                 'trackings.dependencia_destino_id', 'tra.entity_id', 'tra.asunto', 
                 'tra.files as tramite_files', 'trackings.files', 'type.description as tramite_type',
-                'trackings.updated_at', 'tra.verify', 'trackings.tramite_id', 'trackings.alert'
+                'trackings.updated_at', 'tra.verify', 'trackings.tramite_id', 'trackings.alert',
+                'trackings.next', 'trackings.user_verify_id'
             ).orderBy('trackings.updated_at', status_asc.includes(status) ? 'ASC' : 'DESC')
             .paginate(page || 1, 20);
         // to JSON
@@ -171,7 +174,7 @@ class TrackingController {
                 tracking.dependencia_destino_id = request.input('dependencia_destino_id');
                 description = request.input('description');
                 file = file_tmp;
-                let derivado = await this._derivar({ request, payload });
+                let derivado = await this._derivar({ tracking, request, payload });
                 message = await this._configuration(derivado.status, 'NEXT', derivado.status, derivado.id, 'ASC') ? message : `El trámite fue derivado, pero aún no podrá ser atendido`;
                 // generar copia
                 await this._copies({ 
@@ -242,6 +245,7 @@ class TrackingController {
             description = request.input('description');
             // aceptar tracking
             if (status == 'ACEPTADO') {
+                payload.next = tracking.user_destino_id ? 1 : 0;
                 let aceptado = await this._nextTracking({ payload });
                 message = await this._configuration('PENDIENTE', 'NEXT', 'PENDIENTE', aceptado.id, 'ASC') ? message : `El trámite fue aceptado, pero aún no podrá ser atendido`;
                 // generar copia
@@ -271,11 +275,12 @@ class TrackingController {
         tracking.current = current;
         tracking.description = description || tracking.description;
         tracking.status = status;
+        tracking.alert = false;
+        tracking.next = true;
         await tracking.save();
         // get tramite
         let tramite = await Tramite.find(tracking.tramite_id);
         tramite.verify = true;
-        tramite.alert = false;
         await tramite.save();
         // send email tracking 
         Event.fire('tracking::notification', request, tramite, tracking);
@@ -335,7 +340,7 @@ class TrackingController {
         // validar tracking
         if (!tracking) throw new Error('No se encontró el tracking del tramite')
         // verificar si tiene permiso 
-        if (!tracking.verify) if (tracking.person_id != request.$auth.person_id) throw new Error('El trámite no está verificado!');
+        if (tracking.verify === "0") if (tracking.person_id != request.$auth.person_id) throw new Error('El trámite no está verificado!');
         // response tracking
         return tracking;
     }
@@ -381,18 +386,30 @@ class TrackingController {
      * derivar tracking
      * @param {*} param0 
      */
-    _derivar = async ({ request, payload }) => {
-        // validar input dependencia
-        await validation(validate, request.all(), {
-            dependencia_destino_id: 'required'
-        })
+    _derivar = async ({ tracking, request, payload }) => {
+        // get dependencia destino
+        let dependencia_destino_id = request.input('dependencia_destino_id');
+        // validar revisado
+        if (!tracking.next) {
+            // validar role
+            let role = await this._getRole({ request });
+            if (!role) dependencia_destino_id = request._dependencia.id;
+            else if(role.level == 'SECRETARY') dependencia_destino_id = request._dependencia.id; 
+            else await validation(validate, request.all(), { dependencia_destino_id: 'required' });
+        } else {
+            payload.user_verify_id = request.$auth.id;
+            await validation(validate, request.all(), { dependencia_destino_id: 'required' });
+        }
         // validar dependencia interna
-        if (request.input('dependencia_destino_id') == request._dependencia.id) {
-            if (!request.input('user_destino_id')) throw new ValidatorError([{ field: 'user_destino_id', message: 'El destinatario es obligatorio' }]);
+        if (dependencia_destino_id == request._dependencia.id) {
+            if (!dependencia_destino_id) throw new ValidatorError([{ field: 'user_destino_id', message: 'El destinatario es obligatorio' }]);
             if (request.input('user_destino_id') == request.$auth.id) throw new ValidatorError([{ field: 'user_destino_id', message: 'Usted no puede ser el destinatario' }]);
         }
         // change status
         payload.status = 'ENVIADO';
+        payload.dependencia_destino_id = dependencia_destino_id;
+        payload.dependencia_id = dependencia_destino_id;
+        payload.next = 1;
         // save next tracking
         return await this._nextTracking({ payload });
     }
@@ -484,6 +501,19 @@ class TrackingController {
     _configurationError = async (key, variable, status, id, orden = 'ASC') => {
         let validar = await  this._configuration(key, variable, status, id, orden);
         if (!validar) throw new Error("No se puede realizar la acción, el tracking no está en el rango de la configuración");
+    }
+
+    // obtener roles
+    _getRole = async ({ request }) => {
+        let dependencia = request._dependencia;
+        let entity = request._entity;
+        let auth = request.$auth;
+        let role = await Role.query() 
+            .where('entity_id', entity.id)
+            .where('dependencia_id', dependencia.id)
+            .where('user_id', auth.id)
+            .first();
+        return role;
     }
 }
 

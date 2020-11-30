@@ -10,9 +10,11 @@ const addGroup = (group) => {
 // visualizar archivo
 Route.get('file', 'FileController.handle');
 
-
 // ruta v1
 addGroup(Route.group(() => {
+
+  // auth
+  Route.get('/auth/role', 'Auth/AuthRoleController.handle').middleware(['allow:Auth/AuthRoleController.handle', 'jwt', 'entityId', 'dependenciaId']);
 
   // status del tramite
   Route.get('/status/tramite_interno', 'StatusController.tramiteInterno').middleware(['allow:StatusController.tramiteInterno', 'jwt', 'entityId', 'dependenciaId']);
@@ -21,10 +23,13 @@ addGroup(Route.group(() => {
   // Ruta de Tramite
   Route.post('/tramite', 'TramiteController.store').middleware(['allow:TramiteController.store', 'jwt', 'entityId', 'dependenciaId']);
   Route.get('/tramite/:id/code_qr', 'TramiteController.codeQr').middleware(['allow:TramiteController.codeQr', 'jwt']);
+  Route.post('/tramite/:id/delete_file', 'TramiteController.deleteFile').middleware(['allow:TramiteController.deleteFile', 'jwt', 'entityId', 'dependenciaId']);
+  Route.post('/tramite/:id/update_file', 'TramiteController.updateFile').middleware(['allow:TramiteController.updateFile', 'jwt', 'entityId', 'dependenciaId']);
 
   // Ruta de Traking del documento
   Route.get('/tracking', 'TrackingController.index').middleware(['allow:TrackingController.index', 'jwt', 'entityId', 'dependenciaId']);
   Route.post('/tracking/:id/next', 'TrackingController.next').middleware(['allow:TrackingController.next', 'jwt', 'entityId', 'dependenciaId']);
+  Route.post('/tracking/:id/enable', 'NextController.handle').middleware(['allow:NextController.handle', 'jwt', 'entityId', 'dependenciaId']);
 
   // Ruta de la bandeja de entrada
   Route.get('/my_tray', 'TrackingController.my_tray').middleware(['allow:TrackingController.my_tray', 'jwt', 'entityId', 'dependenciaId']);
