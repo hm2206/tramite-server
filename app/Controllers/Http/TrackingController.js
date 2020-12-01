@@ -293,7 +293,7 @@ class TrackingController {
                 .first();
             // if (!last_derivado) throw new Error("No se pudo regresar el archivo a la oficina correspondiente!");
             // // nuevo pendiente
-            // let newPendiente = JSON.parse(JSON.stringify(payload));
+            let newPendiente = JSON.parse(JSON.stringify(payload));
             // newPendiente.user_verify_id = last_derivado.user_verify_id;
             // newPendiente.user_id = last_derivado.user_id;
             newPendiente.dependencia_id = newPendiente.dependencia_origen_id;
