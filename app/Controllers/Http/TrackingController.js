@@ -286,13 +286,23 @@ class TrackingController {
         Event.fire('tracking::notification', request, tramite, tracking);
         // generar pendiente cuando se rechaza un documento
         if (status == 'RECHAZADO') {
+            let last_derivado = Tracking.query()
+                .where('tramite_id', tracking.tramite_id)
+                .where('status', 'DERIVADO')
+                .orderBy('id', 'DESC')
+                .first();
+            if (last_derivado) throw new Error("No se pudo regresar el archivo a la oficina correspondiente!");
+            // nuevo pendiente
             let newPendiente = JSON.parse(JSON.stringify(payload));
+            newPendiente.user_verify_id = last_derivado.user_verify_id;
+            newPendiente.user_id = last_derivado.user_id;
             newPendiente.dependencia_id = newPendiente.dependencia_origen_id;
             newPendiente.dependencia_destino_id = newPendiente.dependencia_origen_id;
             newPendiente.alert = true;
             newPendiente.status = 'PENDIENTE';
             newPendiente.current = 1;
             newPendiente.parent = 1;
+            newPendiente.next = 0;
             await Tracking.create(newPendiente);
             tramite.verify = false;
             await tramite.save();
@@ -391,6 +401,7 @@ class TrackingController {
     _derivar = async ({ tracking, request, payload }) => {
         // get dependencia destino
         let dependencia_destino_id = request.input('dependencia_destino_id');
+        let user_verify_id = tracking.user_verify_id;
         // validar revisado
         if (!tracking.next) {
             // validar role
