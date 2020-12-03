@@ -10,6 +10,7 @@ class TrackingSchema extends Schema {
       table.string('description');
       table.json('files');
       table.integer('user_id');
+      table.integer('user_origen_id');
       table.integer('user_destino_id');
       table.integer('user_verify_id');
       table.integer('tramite_id').notNullable();

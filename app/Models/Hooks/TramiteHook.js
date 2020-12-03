@@ -21,6 +21,7 @@ TramiteHook.createTracking = async (tramite) => {
     await Tracking.create({ 
         description: '---',
         user_id: tramite.user_id,
+        user_origen_id: tramite.verify ? tramite.user_id : null,
         user_destino_id: tramite.verify ? tramite.user_id : null,
         tramite_id: tramite.id,
         dependencia_id: tramite.dependencia_id,
