@@ -154,6 +154,9 @@ class TrackingController {
             .where('dependencia_id', dependencia.id)
             .where('level', 'BOSS')
             .first();
+        // obtener el tramite
+        let tramite = await Tramite.find(current_tracking.tramite_id);
+        if (!tramite) throw new Error("No se encontró el trámite!");
         // verificar si el user_verify_id es el mismo
         if (!current_tracking.next && current_tracking.user_verify_id != auth.id) throw new Error("Usted no está permitido para realizar la siguiente acción");
         // validar que la dependencia cuante con un rol BOSS
@@ -165,20 +168,20 @@ class TrackingController {
         // validar acciones
         switch (status) {
             case 'DERIVADO':
-                await this._derivado({ request, current_tracking, other_dependencia, other_user, is_role, boss, auth, payload, datos });
+                await this._derivado({ tramite, request, current_tracking, other_dependencia, other_user, is_role, boss, auth, payload, datos });
                 break;
             case 'ACEPTADO':
             case 'RECHAZADO':
-                await this._aceptarOrRechazar({ request, current_tracking, payload, datos, auth, status, boss });
+                await this._aceptarOrRechazar({ tramite, request, current_tracking, payload, datos, auth, status, boss });
                 break;
             case 'RESPONDER':
-                await this._responder({ current_tracking, payload, datos, auth, boss });
+                await this._responder({ tramite, current_tracking, payload, datos, auth, boss });
                 break;
             case 'FINALIZADO':
-                await this._finalizar({ request, current_tracking, payload, auth, boss });
+                await this._finalizar({ tramite, request, current_tracking, payload, auth, boss });
                 break;
             case 'ANULADO':
-                await this._anulado({ request, current_tracking, payload, auth, boss })
+                await this._anulado({ tramite, request, current_tracking, payload, auth, boss })
                 break;
             default:
                 throw new Error("No se puede realizar la siguiente acción!");
@@ -192,7 +195,7 @@ class TrackingController {
     }
 
     // derivar tracking
-    _derivado = async ({ request, current_tracking, other_dependencia, other_user, is_role, boss, auth, payload, datos }) => {
+    _derivado = async ({ tramite, request, current_tracking, other_dependencia, other_user, is_role, boss, auth, payload, datos }) => {
         let is_allow = ['PENDIENTE', 'REGISTRADO'];
         // procesar derivado
         if (!is_allow.includes(current_tracking.status)) throw new Error("El trámite no puede ser derivado");
@@ -207,6 +210,8 @@ class TrackingController {
         datos.parent = 0;
         datos.next = 1;
         datos.status = 'ENVIADO';
+        datos.files = await this._saveFile({ request }, tramite.slug)
+        console.log(datos);
         if (other_dependencia) {
             await validation(validateAll, request.all(), {
                 dependencia_destino_id: "required"
@@ -236,6 +241,7 @@ class TrackingController {
         }
         // actualizar el pendiente o registrado
         if (enviado) {
+            current_tracking.files = datos.files;
             current_tracking.description = enviado.description;
             current_tracking.dependencia_destino_id = enviado.dependencia_id;
             current_tracking.dependencia_origen_id = current_tracking.dependencia_id;
@@ -249,7 +255,7 @@ class TrackingController {
     }
 
     // aceptar
-    _aceptarOrRechazar = async ({ request, current_tracking, payload, datos, auth, status, boss }) => {
+    _aceptarOrRechazar = async ({ tramite, request, current_tracking, payload, datos, auth, status, boss }) => {
         let is_allow = ['ENVIADO'];
         if (!is_allow.includes(current_tracking.status)) throw new Error(`El trámite no puede ser ${status == 'ACEPTADO' ? 'aceptado' : 'rechazado'}`);
         let pendiente = null;
@@ -257,6 +263,7 @@ class TrackingController {
         // generar payload
         datos.description = payload.description;
         datos.user_id = auth.id;
+        // validar
         if (status == 'RECHAZADO') {
             // obtener jefe actual
             let current_boss = await this._getCurrentBoss({ tracking: current_tracking, dependencia_id: current_tracking.dependencia_origen_id })
@@ -287,7 +294,7 @@ class TrackingController {
     }
 
     // responder
-    _responder = async ({ request, current_tracking, payload, datos, auth, boss }) => {
+    _responder = async ({ tramite, request, current_tracking, payload, datos, auth, boss }) => {
         let is_allow = ['PENDIENTE'];
         if (!is_allow.includes(current_tracking.status)) throw new Error("No se pudo responder el trámite");
         // obtener derivado
@@ -304,6 +311,7 @@ class TrackingController {
         // misma dependencia
         let self_dependencia = current_tracking.dependencia_destino_id == current_tracking.dependencia_origen_id ? true : false;
         // generar payload
+        datos.files = await this._saveFile({ request }, tramite.slug);
         datos.description = payload.description;
         datos.user_id = auth.id;
         datos.user_origen_id = current_tracking.user_destino_id;
@@ -318,6 +326,7 @@ class TrackingController {
         // generar pendiente
         enviado = await Tracking.create(datos);
         // actualizar envio
+        current_tracking.files = datos.files;
         current_tracking.description = payload.description;
         current_tracking.user_origen_id = enviado.user_destino_id;
         current_tracking.parent = 0;
@@ -330,11 +339,12 @@ class TrackingController {
     }
 
     // finalizar
-    _finalizar = async ({ request, current_tracking, payload, auth, boss }) => {
+    _finalizar = async ({ tramite, request, current_tracking, payload, auth, boss }) => {
         let is_allow = ['PENDIENTE'];
         // procesar derivado
         if (!is_allow.includes(current_tracking.status)) throw new Error("El trámite no puder ser finalizado");
         current_tracking.status = 'FINALIZADO';
+        current_tracking.files = await this._saveFile({ request }, tramite.slug);
         current_tracking.description = payload.description;
         current_tracking.next = 1;
         current_tracking.alert = 0;
@@ -347,6 +357,7 @@ class TrackingController {
         let is_allow = ['REGISTRADO'];
         // procesar derivado
         if (!is_allow.includes(current_tracking.status)) throw new Error("El trámite no puder ser anulado");
+        current_tracking.files = await this._saveFile({ request }, tramite.slug);
         current_tracking.status = 'ANULADO';
         current_tracking.description = payload.description;
         current_tracking.next = 1;
@@ -557,23 +568,6 @@ class TrackingController {
     // }
 
     // /**
-    //  * obtener meta datos del remitente que derivo el tramite
-    //  * @param {*} param0 
-    //  */
-    // _getResponse = async (tracking) => {
-    //     let response = await Tracking.query()
-    //         .where('tramite_id', tracking.tramite_id)
-    //         .where('status', 'DERIVADO')
-    //         .where('dependencia_id', tracking.dependencia_origen_id)
-    //         .orderBy('id', 'DESC')
-    //         .first();
-    //     // validar response
-    //     if (!response) throw new Error(`No se pudó responder a la dependencia`);
-    //     // response 
-    //     return response;
-    // }
-
-    // /**
     //  * Obtener el tracking del tramite
     //  * @param {*} param0 
     //  * @param {*} parent 
@@ -598,29 +592,29 @@ class TrackingController {
     //  * guardar file
     //  * @param {*} param0 
     //  */
-    // _saveFile = async ({ request }, slug) => {
-    //     // get fecha 
-    //     let date = `${moment().format('YYYY-MM-DD')}`.replace('-', "");
-    //     // guardar archivo 
-    //     let file = await Storage.saveFile(request, 'files', {
-    //         size: '2mb',
-    //         extnames: ['pdf', 'docx'],
-    //         multifiles: true
-    //     }, Helpers, {
-    //         path: `tramite/${slug}/tracking/${date.replace("-", "")}`,
-    //         options: {
-    //             overwrite: true 
-    //         }
-    //     });
-    //     // new files
-    //     let newFiles = [];
-    //     // add files 
-    //     if (file && file.success) {
-    //         file.files.map(f => newFiles.push(LINK('tmp', f.path)));
-    //     }
-    //     // response path file
-    //     return JSON.stringify(newFiles);
-    // }
+    _saveFile = async ({ request }, slug) => {
+        // get fecha 
+        let date = `${moment().format('YYYY-MM-DD')}`.replace('-', "");
+        // guardar archivo 
+        let file = await Storage.saveFile(request, 'files', {
+            size: '6mb',
+            extnames: ['pdf', 'docx'],
+            multifiles: true
+        }, Helpers, {
+            path: `tramite/${slug}/tracking/${date.replace("-", "")}`,
+            options: {
+                overwrite: true 
+            }
+        });
+        // new files
+        let newFiles = [];
+        // add files 
+        if (file && file.success) {
+            file.files.map(f => newFiles.push(LINK('tmp', f.path)));
+        }
+        // response path file
+        return JSON.stringify(newFiles);
+    }
 
     // /**
     //  * generar nuevo tracking
