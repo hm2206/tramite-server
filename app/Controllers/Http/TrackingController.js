@@ -169,10 +169,15 @@ class TrackingController {
         switch (status) {
             case 'DERIVADO':
                 await this._derivado({ tramite, request, current_tracking, other_dependencia, other_user, is_role, boss, auth, payload, datos });
+                // deshabilitar
+                tramite.verify = 1;
+                await tramite.save();
                 break;
             case 'ACEPTADO':
             case 'RECHAZADO':
                 await this._aceptarOrRechazar({ tramite, request, current_tracking, payload, datos, auth, status, boss });
+                tramite.verify = 0;
+                await tramite.save();
                 break;
             case 'RESPONDER':
                 await this._responder({ tramite, current_tracking, payload, datos, auth, boss });
@@ -211,7 +216,6 @@ class TrackingController {
         datos.next = 1;
         datos.status = 'ENVIADO';
         datos.files = await this._saveFile({ request }, tramite.slug)
-        console.log(datos);
         if (other_dependencia) {
             await validation(validateAll, request.all(), {
                 dependencia_destino_id: "required"
@@ -231,10 +235,12 @@ class TrackingController {
             });
             // validar usuario sea diferente al actual
             if (!other_user) throw new Error("No puede derivar usted mismo su trámite!");
+            datos.user_origen_id = current_tracking.user_destino_id;
             datos.user_destino_id = payload.user_destino_id;
             datos.dependencia_id = current_tracking.dependencia_id;
             datos.dependencia_destino_id = current_tracking.dependencia_id;
             datos.dependencia_origen_id = current_tracking.dependencia_id;
+            datos.user_verify_id = request.input('user_destino_id');
             datos.next = 1;
             // generar enviado
             enviado = await Tracking.create(datos);
@@ -281,6 +287,7 @@ class TrackingController {
         datos.next = 0;
         datos.alert = status == 'RECHAZADO' ? 1 : 0;
         datos.status = 'PENDIENTE';
+        datos.files = JSON.stringify([]);
         // generar pendiente
         pendiente = await Tracking.create(datos);
         // actualizar envio
@@ -290,6 +297,7 @@ class TrackingController {
         current_tracking.status = status;
         current_tracking.next = 1;
         current_tracking.state = 0;
+        current_tracking.files = JSON.stringify([]);
         await current_tracking.save();
     }
 
