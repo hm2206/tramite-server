@@ -279,6 +279,7 @@ class TrackingController {
             datos.dependencia_destino_id = current_tracking.dependencia_origen_id;
             datos.dependencia_id = current_tracking.dependencia_origen_id;
             datos.dependencia_origen_id = current_tracking.dependencia_id;
+            datos.user_verify_id = self_dependencia ? current_tracking.user_origen_id : current_boss.user_id;
         } else {
             datos.user_destino_id = self_dependencia ? current_tracking.user_destino_id : null;
             datos.user_verify_id = self_dependencia ? auth.id : boss.user_id;
@@ -309,7 +310,7 @@ class TrackingController {
         let enviado = null;
         let derivado = await Tracking.query()
             .where('tramite_id', current_tracking.tramite_id)
-            .where('status', 'DERIVADO')
+            .whereIn('status', ['RECHAZADO', 'ACEPTADO'])
             .where('state', 0)
             .orderBy('id', 'DESC')
             .first();
@@ -323,8 +324,8 @@ class TrackingController {
         datos.description = payload.description;
         datos.user_id = auth.id;
         datos.user_origen_id = current_tracking.user_destino_id;
-        datos.user_destino_id = self_dependencia ? derivado.user_origen_id : null;
-        datos.user_verify_id = self_dependencia ? derivado.user_origen_id : current_boss.user_id;
+        datos.user_destino_id = self_dependencia ? derivado.user_destino_id : null;
+        datos.user_verify_id = self_dependencia ? derivado.user_destino_id : current_boss.user_id;
         datos.dependencia_id = derivado.dependencia_id;
         datos.dependencia_destino_id = derivado.dependencia_id;
         datos.parent = 0;
@@ -336,7 +337,6 @@ class TrackingController {
         // actualizar envio
         current_tracking.files = datos.files;
         current_tracking.description = payload.description;
-        current_tracking.user_origen_id = enviado.user_destino_id;
         current_tracking.parent = 0;
         current_tracking.current = 0;
         current_tracking.status = 'RESPONDIDO';
