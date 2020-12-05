@@ -39,7 +39,7 @@ class StatusController {
                 .where('tra.status', allow)
                 .select(DB.raw(`count(tra.status)`))
             // filter user_destino_id
-            if (user_destino_id) raw_status.whereRaw(`(tra.user_destino_id = ${user_destino_id} OR tra.user_verify_id = ${user_destino_id})`);
+            if (user_destino_id) raw_status.whereRaw(`(tra.user_id = ${user_destino_id} OR tra.user_verify_id = ${user_destino_id})`);
             else raw_status.whereNull('tra.user_destino_id');
             // add select
             select_status.push(`(${raw_status}) as ${allow}`);

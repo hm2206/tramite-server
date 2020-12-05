@@ -52,7 +52,7 @@ class TrackingController {
         // filtros
         if (status) tracking.where('status', status);
         if (query_search) tracking.where('tra.slug', 'like', `%${query_search}%`);
-        if (user_id) tracking.whereRaw(`(trackings.user_destino_id = ${user_id} OR trackings.user_verify_id = ${user_id})`);
+        if (user_id) tracking.whereRaw(`(trackings.user_id = ${user_id} OR trackings.user_verify_id = ${user_id})`);
         else tracking.whereNull('trackings.user_destino_id');
         // get paginate
         tracking = await tracking.select(
@@ -207,7 +207,7 @@ class TrackingController {
         let enviado = null;
         // generar payload
         datos.description = payload.description;
-        datos.user_id = auth.id;
+        datos.user_id = null;
         datos.user_destino_id = null;
         datos.user_verify_id = boss.user_id;
         datos.dependencia_id = payload.dependencia_destino_id;
@@ -235,6 +235,7 @@ class TrackingController {
             });
             // validar usuario sea diferente al actual
             if (!other_user) throw new Error("No puede derivar usted mismo su trámite!");
+            datos.user_id = request.input('user_destino_id');
             datos.user_origen_id = current_tracking.user_destino_id;
             datos.user_destino_id = payload.user_destino_id;
             datos.dependencia_id = current_tracking.dependencia_id;
@@ -249,6 +250,7 @@ class TrackingController {
         if (enviado) {
             current_tracking.files = datos.files;
             current_tracking.description = enviado.description;
+            current_tracking.user_destino_id = enviado.user_destino_id;
             current_tracking.dependencia_destino_id = enviado.dependencia_id;
             current_tracking.dependencia_origen_id = current_tracking.dependencia_id;
             current_tracking.parent = 0;
@@ -266,6 +268,12 @@ class TrackingController {
         if (!is_allow.includes(current_tracking.status)) throw new Error(`El trámite no puede ser ${status == 'ACEPTADO' ? 'aceptado' : 'rechazado'}`);
         let pendiente = null;
         let self_dependencia = current_tracking.dependencia_destino_id == current_tracking.dependencia_origen_id ? true : false;
+        // ultima acción
+        let derivado = await Tracking.query()
+            .where('tramite_id', current_tracking.tramite_id)
+            .where('state', 0)
+            .orderBy('id', 'DESC')
+            .first();
         // generar payload
         datos.description = payload.description;
         datos.user_id = auth.id;
@@ -273,16 +281,18 @@ class TrackingController {
         if (status == 'RECHAZADO') {
             // obtener jefe actual
             let current_boss = await this._getCurrentBoss({ tracking: current_tracking, dependencia_id: current_tracking.dependencia_origen_id })
+            datos.user_id = current_tracking.user_origen_id;
             datos.user_origen_id = current_tracking.user_destino_id;
-            datos.user_destino_id = self_dependencia ? current_tracking.user_origen_id : null;
-            datos.user_verify_id = self_dependencia ? current_tracking.user_origen_id : current_boss.user_id;
+            datos.user_destino_id = self_dependencia ? derivado.user_origen_id : null;
+            datos.user_verify_id = self_dependencia ? derivado.user_origen_id : current_boss.user_id;
             datos.dependencia_destino_id = current_tracking.dependencia_origen_id;
             datos.dependencia_id = current_tracking.dependencia_origen_id;
             datos.dependencia_origen_id = current_tracking.dependencia_id;
             datos.user_verify_id = self_dependencia ? current_tracking.user_origen_id : current_boss.user_id;
         } else {
+            datos.user_origen_id =  current_tracking.user_origen_id
             datos.user_destino_id = self_dependencia ? current_tracking.user_destino_id : null;
-            datos.user_verify_id = self_dependencia ? auth.id : boss.user_id;
+            datos.user_verify_id = self_dependencia ? current_tracking.user_destino_id : boss.user_id;
         }
         datos.parent = 1;
         datos.next = 0;
@@ -292,6 +302,7 @@ class TrackingController {
         // generar pendiente
         pendiente = await Tracking.create(datos);
         // actualizar envio
+        current_tracking.user_origen_id = datos.user_destino_id;
         current_tracking.description = payload.description;
         current_tracking.parent = 0;
         current_tracking.current = 0;
@@ -310,7 +321,6 @@ class TrackingController {
         let enviado = null;
         let derivado = await Tracking.query()
             .where('tramite_id', current_tracking.tramite_id)
-            .whereIn('status', ['RECHAZADO', 'ACEPTADO'])
             .where('state', 0)
             .orderBy('id', 'DESC')
             .first();
@@ -322,10 +332,10 @@ class TrackingController {
         // generar payload
         datos.files = await this._saveFile({ request }, tramite.slug);
         datos.description = payload.description;
-        datos.user_id = auth.id;
+        datos.user_id = current_tracking.user_origen_id;
         datos.user_origen_id = current_tracking.user_destino_id;
-        datos.user_destino_id = self_dependencia ? derivado.user_destino_id : null;
-        datos.user_verify_id = self_dependencia ? derivado.user_destino_id : current_boss.user_id;
+        datos.user_destino_id = self_dependencia ? current_tracking.user_origen_id : null;
+        datos.user_verify_id = self_dependencia ?  current_tracking.user_origen_id : current_boss.user_id;
         datos.dependencia_id = derivado.dependencia_id;
         datos.dependencia_destino_id = derivado.dependencia_id;
         datos.parent = 0;
