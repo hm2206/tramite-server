@@ -180,7 +180,7 @@ class TrackingController {
                 await tramite.save();
                 break;
             case 'RESPONDER':
-                await this._responder({ tramite, current_tracking, payload, datos, auth, boss });
+                await this._responder({ tramite, request, current_tracking, payload, datos, auth, boss });
                 break;
             case 'FINALIZADO':
                 await this._finalizar({ tramite, request, current_tracking, payload, auth, boss });
