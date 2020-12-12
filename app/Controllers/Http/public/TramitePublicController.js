@@ -14,6 +14,8 @@ const Event = use('Event');
 const Encryption = use('Encryption')
 const CodeVerify = use('App/Models/CodeVerify');
 const { addQrPdfEmbed } = require('../../../Services/addQrPdf');
+const codeQR = require('qrcode');
+const Env = use('Env');
 
 
 class TramitePublicController {
@@ -176,6 +178,10 @@ class TramitePublicController {
         tramite.person = person || {};
         // generar url file
         await tramite.getUrlFiles();
+        // generar code qr
+        let link = `${Env.get('CLIENT_TRAMITE')}?slug=${tramite.slug}`;
+        let code = await codeQR.toDataURL(link);
+        tramite.code_qr = code;
         // response
         return { 
             success: true,
