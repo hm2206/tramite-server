@@ -281,7 +281,7 @@ class TrackingController {
         if (status == 'RECHAZADO') {
             // obtener jefe actual
             let current_boss = await this._getCurrentBoss({ tracking: current_tracking, dependencia_id: current_tracking.dependencia_origen_id })
-            datos.user_id = current_tracking.user_origen_id;
+            datos.user_id = self_dependencia ? current_tracking.user_origen_id : null;
             datos.user_origen_id = current_tracking.user_destino_id;
             datos.user_destino_id = self_dependencia ? derivado.user_origen_id : null;
             datos.user_verify_id = self_dependencia ? derivado.user_origen_id : current_boss.user_id;
