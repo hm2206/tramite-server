@@ -9,8 +9,6 @@ class TicketController {
             
         })
 
-        console.log(PageSizes);
-
         const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman)
 
         //  297×210

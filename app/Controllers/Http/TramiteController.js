@@ -137,7 +137,6 @@ class TramiteController {
         if (files.length > 1) {
             let name = files[index];
             files.splice(index, 1);
-            console.log(files);
             tramite.files = JSON.stringify(files);
             await tramite.save();
             // response
