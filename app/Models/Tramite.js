@@ -1,16 +1,25 @@
 'use strict'
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
-const Model = use('Model')
-const { URL } = require('../../utils');
+const Env = use('Env');
+const Model = use('Model');
+const codeQR = require('qrcode');
 
 class Tramite extends Model {
 
     static boot() {
         super.boot();
-        this.addHook('afterCreate', 'TramiteHook.createTracking');
+        this.addHook('afterDelete', 'TramiteHook.deleteChildren');
+    }
+    
+    // functiones
+    funcCodeQr = async () => {
+        let link = `${Env.get('CLIENT_TRAMITE')}?slug=${this.slug}`;
+        let code_qr  = await codeQR.toDataURL(link);
+        return code_qr;
     }
 
+    // relaciones
     tramite_type = () => {
         return this.belongsTo('App/Models/TramiteType');
     }
@@ -18,18 +27,6 @@ class Tramite extends Model {
     tracking = () => {
         return this.hasMany('App/Models/Tracking');
     }
-
-    getUrlFile = (up = false) => {
-        this.file = URL(this.file, up);
-    }
-
-    getUrlFiles = async (up = false) => {
-        this.files = JSON.parse(this.files || []);
-        let newFiles = [];
-        await this.files.filter(f => newFiles.push(URL(f, up)));
-        this.files = newFiles;
-    }
-
 }
 
 module.exports = Tramite

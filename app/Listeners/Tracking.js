@@ -1,6 +1,25 @@
 'use strict'
 
+const moment = require("moment");
+
 const Tracking = exports = module.exports = {}
+
+Tracking.verify = async (request, tramite) => {
+    let auth = request.$auth;
+    // enviar email
+    await request.api_authentication.post('mail/to', {
+        from: request._system.email,
+        email: auth.email,
+        header: `Trámite Verificado`,
+        username: `Código: ${tramite.slug}`,
+        contenido: `
+            Usted acaba de dar la autorización del trámite <br/>
+            <b>Asunto:</b> ${tramite.asunto}
+        `,
+        subject: 'Trámite listo para ser derivado'
+    });
+}
+
 
 Tracking.notification = async (request, tramite, tracking) => {
     let auth = request.$auth;

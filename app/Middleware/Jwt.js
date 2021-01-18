@@ -3,6 +3,10 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
+const NotAuthenticateException = require('../Exceptions/NotAuthenticateException')
+const { getResponseError } = require('../Services/response');
+const View = use('View');
+
 class Jwt {
   /**
    * @param {object} ctx
@@ -22,18 +26,14 @@ class Jwt {
           message: err.message
         }));
       // validar auth
-      if (success == false) throw new Error(message);
+      if (success == false) throw new NotAuthenticateException(message)
       // add auth in ctx
       request.$auth = user;
+      View.global('auth', user);
       // call next to advance the request
       await next()
     } catch (error) {
-      return response.send({
-        success: false,
-        status: error.status || 501,
-        code: error.code || 'ERR_AUTHORIZATION',
-        message: error.message
-      })
+      return getResponseError(response, error, 'ERR_JWT')
     }
   }
 }

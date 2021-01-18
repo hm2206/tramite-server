@@ -1,0 +1,74 @@
+{
+  "TramiteController.store": {
+    "name": "TramiteController.store",
+    "url": "api/tramite",
+    "description": "Crear Trámite",
+    "action_type": "CREATE"
+  },
+  "TramiteTypeController.index": {
+    "name": "TramiteTypeController.index",
+    "url": "api/tramite_type",
+    "description": "Listar Tipo de trámite",
+    "action_type": "VIEW"
+  },
+  "TrackingController.show": {
+    "name": "TrackingController.show",
+    "url": "api/tracking/:id",
+    "description": "Obtener tracking por identificador",
+    "action_type": "VIEW"
+  },
+  "VerifyController.handle": {
+    "name": "VerifyController.handle",
+    "url": "api/tracking/:id/verify",
+    "description": "Verificar/Revisar el seguímiento del trámite",
+    "action_type": "UPDATE"
+  },
+  "NextController.handle": {
+    "name": "NextController.handle",
+    "url": "api/tracking/:id/next",
+    "description": "Procesar seguímiento de trámite",
+    "action_type": "CREATE"
+  },
+  "TimelineController.handle": {
+    "name": "TimelineController.handle",
+    "url": "api/tramite/:slug/timeline",
+    "description": "Linéa de tiempo del trámite",
+    "action_type": "CREATE"
+  },
+  "FileController.store": {
+    "name": "FileController.store",
+    "url": "api/file",
+    "description": "Crear archivo",
+    "action_type": "CREATE"
+  },
+  "FileController.handle": {
+    "name": "FileController.handle",
+    "url": "file",
+    "description": "Mostrar archivo",
+    "action_type": "VIEW"
+  },
+  "FileController.object_type": {
+    "name": "FileController.object_type",
+    "url": "api/file/:object_id/object_type",
+    "description": "Listar archivo del objecto",
+    "action_type": "VIEW"
+  },
+  "Auth/AuthRoleController.handle": {
+    "name": "Auth/AuthRoleController.handle",
+    "url": "api/auth/role",
+    "description": "Obtener el rol del auth y del jefe del area actual",
+    "action_type": "VIEW"
+  },
+  "Auth/AuthTrackingController.handle": {
+    "name": "Auth/AuthTrackingController.handle",
+    "url": "api/auth/tracking/:modo",
+    "description": "Obtener listado de tracking según modo",
+    "action_type": "VIEW"
+  },
+  "Auth/AuthTramiteController.show": {
+    "name": "Auth/AuthTramiteController.show",
+    "url": "api/auth/tramite/:slug",
+    "description": "Obtener tramite en el estado actual segun dependencia",
+    "action_type": "VIEW"
+  }
+}

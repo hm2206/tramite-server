@@ -3,7 +3,8 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
-const { authentication } = require('../Services/apis');
+const { getResponseError } = require('../Services/response');
+const View = use('View');
 
 class EntityProvider {
   /**
@@ -20,16 +21,12 @@ class EntityProvider {
       let { data } = await request.api_authentication.get(`auth/entity/${id}`);
       if (!data.id) throw new Error("No se encontró la entidad!");
       // inject entity
-      request._entity = data;
+      request.$entity = data;
+      View.global('entity', data);
       // call next to advance the request
       await next()
     } catch (error) {
-      return response.send({
-        success: false,
-        status: error.status || 501,
-        code: error.code || 'ERR_ENTITY_ID',
-        message: error.message
-      });
+      return getResponseError(response, error, 'ERR_ENTITY_ID');
     }
   }
 

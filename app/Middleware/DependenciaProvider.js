@@ -3,6 +3,8 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
+const { getResponseError } = require('../Services/response');
+
 class DependenciaProvider {
   /**
    * @param {object} ctx
@@ -15,7 +17,7 @@ class DependenciaProvider {
       let dependenciaId = request.header('DependenciaId');
       if (!dependenciaId) throw new Error('La cabezera DependenciaId es obligatoria');
       // get dependencia
-      let { success, message, dependencia } = await request.api_authentication.get(`auth/dependencia/${request._entity.id}/${dependenciaId}`)
+      let { success, message, dependencia } = await request.api_authentication.get(`auth/dependencia/${request.$entity.id}/${dependenciaId}`)
         .then(res => res.data)
         .catch(err => ({
           success: false,
@@ -26,16 +28,11 @@ class DependenciaProvider {
       // validar dependecia
       if (!success) throw new Error(message);
       // add depedencia at ctx
-      request._dependencia = dependencia;
+      request.$dependencia = dependencia;
       // call next to advance the request
       await next()
     } catch (error) {
-      return response.send({
-        success: false,
-        status: error.status || 501,
-        code: error.code || 'ERR_DEPENDENCIA',
-        message: error.message || 'No se encontró la dependencia'
-      });
+      return getResponseError(response, error, 'ERR_DEPENDENCIA')
     }
   }
 }

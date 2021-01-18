@@ -1,56 +1,51 @@
 'use strict'
 
-const Tramite = use('App/Models/Tramite');
-const Helpers = use('Helpers');
-const { validateAll } = use('Validator');
-const { Storage, validation } = require('validator-error-adonis');
+const Tracking = use('App/Models/Tracking');
+const Verify = use('App/Models/Verify');
+const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
+const moment = require('moment');
 const Event = use('Event');
+
 
 class VerifyController {
 
     handle = async ({ params, request }) => {
-        // validar
-        await validation(validateAll, request.all(), {
-            verify_observation: 'required|max:255'
-        });
-        // obtener el auth
         let auth = request.$auth;
-        // obtener tramite
-        let tramite = await Tramite.query() 
-            .where('verify', 0)
-            .where('person_id', auth.person_id)
-            .where('id', params.id)
+        let entity = request.$entity;
+        let dependencia = request.$dependencia;
+        let tracking = await Tracking.query()
+            .with('tramite')
+            .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
+            .where('trackings.id', params.id)
+            .where('trackings.revisado', 0)
+            .where('trackings.dependencia_id', dependencia.id)
+            .where('tra.entity_id', entity.id)
+            .select('trackings.*')
             .first();
-        // validar
-        if (!tramite) throw new Error("No se encontró el tramite");
-        // guardar archivos
-        if (request.file('files')) {
-            let files = await Storage.saveFile(request, "files", {
-                extnames: ['pdf'],
-                required: false,
-                multifiles: true
-            }, Helpers, {
-                path: `/tramite/${tramite.slug}`,
-                options: {
-                    overwrite: true 
-                }
-            });
-            // validar archivos
-            if (!files.success) throw new Error("No se pudo guardar todos los archivos");
-        }
-        // actualizar
-        tramite.verify = 1;
-        tramite.verify_observation = request.input('verify_observation');
-        // verificar el trámite
-        await tramite.save();
-        // enviar tramite
-        await Event.fire("tramite::verify", request, tramite);
+        // verificar tracking
+        if (!tracking) throw new NotFoundModelException("El seguímiento");
+        let verify = await Verify.query()
+            .where('tracking_id', tracking.id)
+            .where('user_id', tracking.user_verify_id)
+            .where('user_id', auth.id)
+            .first();
+        if (!verify) throw new NotFoundModelException("No se puede verificar el seguímiento del trámite");
+        // actualizar verify
+        await Verify.query()
+            .where('id', verify.id)
+            .update({ date_verify:  moment().format('YYYY-MM-DD hh:mm:ss') })
+        // actualizar tracking
+        await Tracking.query()
+            .where('id', tracking.id)
+            .update({ revisado: 1 });
+        // notificar
+        await Event.fire("tracking::verify", request, tracking.tramite);
         // response
-        return { 
+        return {
             success: true,
             status: 201,
-            message: "Los datos se verificarón correctamente!"
-        };
+            message: "El seguímiento se verificó correctamente!"
+        }
     }
 
 }

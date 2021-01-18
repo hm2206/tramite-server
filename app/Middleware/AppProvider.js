@@ -3,7 +3,7 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
-const { authentication, signature } = require('../Services/apis');
+const { authentication, tramite } = require('../Services/apis');
 const { getClient, getAuthorization } = require('../Services/tools');
 
 class AppProvider {
@@ -18,7 +18,7 @@ class AppProvider {
     await authentication.config(getAuthorization(request));
     // add apis en el ctx;
     request.api_authentication = authentication;
-    request.api_signature = signature;
+    request.api_tramite = tramite;
     // call next to advance the request
     await next()
   }

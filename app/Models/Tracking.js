@@ -5,13 +5,22 @@ const Model = use('Model')
 
 class Tracking extends Model {
 
+    static get hidden () {
+        return ['visible'];
+    }
+
     static boot() {
         super.boot();
-        this.addHook('afterCreate', 'TrackingHook.nextTracking');
+        this.addHook('afterCreate', 'TrackingHook.createVerify');
+        this.addHook('afterDelete', 'TrackingHook.deleteVerify');
     }
 
     tramite = () => {
         return this.belongsTo('App/Models/Tramite');
+    }
+
+    verify = () => {
+        return this.hasOne('App/Models/Verify', 'user_verify_id', 'user_id')
     }
 
 }

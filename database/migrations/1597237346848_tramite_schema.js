@@ -9,18 +9,13 @@ class TramiteSchema extends Schema {
       table.increments()
       table.string('entity_id').notNullable();
       table.integer('person_id').notNullable();
-      table.integer('user_id').comment('El user que creó el tramite (si es null, se creó el tramite desde el exterior)');
       table.string('slug').unique()
       table.string('document_number').notNullable();
       table.integer('tramite_type_id').notNullable();
       table.integer('folio_count').notNullable();
       table.string('asunto').notNullable();
-      table.json('files').notNullable();
       table.text('observation');
-      table.integer('dependencia_id').notNullable();
       table.integer('dependencia_origen_id');
-      table.boolean('verify').defaultTo(true);
-      table.string('verify_observation');
       table.boolean('state').defaultTo(true);
       table.timestamps()
     })

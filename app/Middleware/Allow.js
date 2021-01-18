@@ -3,6 +3,10 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
+const { getResponseError } = require('../Services/response');
+const NotRegisterAppException = require('../Exceptions/NotRegisterAppException');
+const View = use('View');
+
 class Allow {
   /**
    * @param {object} ctx
@@ -23,16 +27,14 @@ class Allow {
           app: {}
         }));
       // validar method app
-      if (!success) throw new Error(message); 
+      if (!success) throw new NotRegisterAppException(); 
+      // add app
+      request.$app = app;
+      View.global('app', app);
       // call next to advance the request
       await next()
     } catch (error) {
-      return response.send({
-        success: false,
-        status: error.status || 501,
-        code: error.code || 'ERR_ALLOW',
-        message: error.message
-      })
+      return getResponseError(response, error, 'ERR_ALLOW');
     }
   }
 }

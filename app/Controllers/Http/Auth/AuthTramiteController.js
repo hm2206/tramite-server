@@ -3,18 +3,31 @@
 const Tracking = use('App/Models/Tracking');
 const File = use('App/Models/File');
 const collect = require('collect.js');
+const NotFoundModelException = require('../../../Exceptions/NotFoundModelException');
+const DB = use('Database');
 
-class TrackingController {
+class AuthTramiteController {
 
     // obtener tracking
     show = async ({ params, request }) => {
+        // obtener setting
+        let entity = request.$entity;
+        let dependencia = request.$dependencia;
+        let auth = request.$auth;
         // obtener tracking
         let tracking = await Tracking.query()
+            .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .with('verify')
             .with('tramite', (build) => {
                 build.with('tramite_type');
-            }).where('tramite_id', params.id)
+            }).where('tra.slug', params.slug)
+            .where('tra.entity_id', entity.id)
+            .where('dependencia_id', dependencia.id)
+            .where('visible', 1)
+            .whereRaw(`IF(modo = 'YO', IF(user_verify_id = ${auth.id}, 1, 0), 1)`)
+            .select('trackings.*')
             .first();
+        if (!tracking) throw new NotFoundModelException("El trámite");
         // obtener tramite
         let tramite = await tracking.tramite().fetch();
         // obtener dependencias
@@ -62,4 +75,4 @@ class TrackingController {
 
 }
 
-module.exports = TrackingController
+module.exports = AuthTramiteController

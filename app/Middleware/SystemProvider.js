@@ -3,11 +3,14 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
-const View = use('View');
-const Env = use('Env');
 const { authentication } = require('../Services/apis');
 const { getSystemKey } = require('../Services/tools');
-
+const { getResponseError } = require('../Services/response');
+const SystemException = require('../Exceptions/SystemException');
+const View = use('View');
+const Env = use('Env');
+const moment = require('moment');
+const currencyFormatter = require('currency-formatter')
 
 class SystemProvider {
   /**
@@ -19,31 +22,17 @@ class SystemProvider {
     try {
       // validar systema
       let { data } = await authentication.get('system/auth/me', { headers: { SystemSecret: getSystemKey() } });
-      if (!data.success) throw new Error(data.message);
-      request._system = data.system;
-      // custimizar el view
-      this.configView(request);
-      // response
+      if (!data.success) throw new SystemException(data.message);
+      request.$system = data.system;
+      View.global('JSON', JSON);
+      View.global('urlReport', (url) => `${Env.get('APP_URL_REPORT')}/${url}`);
+      View.global('system', data.system);
+      View.global('moment', moment);
+      View.global('currencyFormatter', currencyFormatter);
       return await next(request)
     } catch (error) {
-      return response.send({
-        success: false,
-        status: error.status || 501,
-        code: error.code || "ERR_SYSTEM",
-        message: error.message
-      });
+      return getResponseError(response, error);
     }
-  }
-
-  configView = (request) => {
-    // url report
-    View.global('urlReport', (path) => {
-      return `${Env.get('APP_URL_REPORT')}/${path || ""}`;
-    });
-    // system
-    View.global('$system', request._system);
-    // env
-    View.global('Env', Env);
   }
 }
 

@@ -3,37 +3,48 @@
 const TramiteHook = exports = module.exports = {}
 
 const Tracking = use('App/Models/Tracking');
-const Role = use('App/Models/Role');
+const Verify = use('App/Models/Verify');
+const File = use('App/Models/File');
+const DB = use('Database');
+const Drive = use('Drive');
+const collect = require('collect.js');
 
-TramiteHook.createTracking = async (tramite) => {
-    let user_verify_id = tramite.user_id;
-    // validar si está es interno o externo
-    if (!tramite.verify) {
-        let role = await Role.query()
-            .where("entity_id", tramite.entity_id)
-            .where("dependencia_id", tramite.dependencia_id)
-            .where("level", "BOSS")
-            .first();
-        // obtener role
-        if (role) user_verify_id = role.user_id;
-    }
-    // crear tracking
-    await Tracking.create({ 
-        description: '---',
-        user_id: tramite.user_id,
-        user_origen_id: tramite.verify ? tramite.user_id : null,
-        user_destino_id: tramite.verify ? tramite.user_id : null,
-        tramite_id: tramite.id,
-        dependencia_id: tramite.dependencia_id,
-        dependencia_origen_id: tramite.dependencia_id,
-        dependencia_destino_id: tramite.dependencia_id,
-        current: 1,
-        parent: tramite.dependencia_origen_id ? 1 : 0,
-        status: tramite.dependencia_origen_id ? 'REGISTRADO' : 'ENVIADO',
-        next: 0,
-        user_verify_id
+// eliminar en cadena
+TramiteHook.deleteChildren = async (tramite) => {
+    // obtener ids tracking
+    let tracking_ids = await Tracking.query()
+        .where('tramite_id', tramite.id)
+        .pluck('id');
+    // eliminar verificación
+    await Verify.query()
+        .whereIn('tracking_id', tracking_ids)
+        .delete();
+    // obtener archivos del tramite
+    let files = await File.query()
+        .whereIn('object_type', ['App/Models/Tramite'])
+        .where('object_id', tramite.id)
+        .fetch();
+    files = await files.toJSON();
+    // obtener archivos del tracking
+    let tracking_files = await File.query()
+        .whereIn('object_type', ['App/Models/Tracking'])
+        .whereIn('object_id', tracking_ids)
+        .fetch();
+    tracking_files = await tracking_files.toJSON();
+    // fusionar arrays
+    files = [...files, ...tracking_files];
+    // elimnar archivos temporales
+    await files.map(async f => {
+        let exists = await Drive.exists(f.real_path);
+        if (exists) await Drive.delete(f.real_path);
     });
-    // actualizar verify
-    tramite.verify = 0;
-    await tramite.save();
+    // eliminar archivos de la base de datos
+    let ids = collect(files).pluck('id').toArray();
+    await File.query()
+        .whereIn('id', ids)
+        .delete();
+    // eliminar tracking
+    await Tracking.query()
+        .where('tramite_id', tramite.id)
+        .delete();
 }
