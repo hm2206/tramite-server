@@ -6,4 +6,4 @@ Event.on('tramite::tracking', 'Tramite.tracking');
 
 // tracking
 Event.on('tracking::notification', 'Tracking.notification');
-Event.on('tracking::verify', 'tracking.verify');
+Event.on('tracking::verify', 'Tracking.verify');
