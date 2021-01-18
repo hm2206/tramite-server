@@ -9,6 +9,8 @@ const CustomException = require('../../Exceptions/CustomException');
 const FileController = require('./FileController');
 const moment = require('moment');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
+const File = use('App/Models/File');
+const DB = use('Database');
 
 class NextController {
 
@@ -99,6 +101,19 @@ class NextController {
         } else {
             if (this.tracking.user_verify_id != this.auth.id) throw new CustomException("Usted no es el protietario del seguímiento!");
         }
+    }
+
+    // copiar archivos
+    _copyFiles = async (tracking_id, tracking_origen_id) => {
+        let files = await File.query()
+            .where('object_type', 'App/Models/Tracking')
+            .where('object_id', tracking_origen_id)
+            .select(DB.raw(`${tracking_id} as object_id`), 'object_type', 'name', 'extname', 'size', 'url', 'real_path', 'tag')
+            .fetch();
+        // convertir
+        files = await files.toJSON();
+        // copiar
+        await File.createMany(files);
     }
 
     // manejador
@@ -205,6 +220,8 @@ class NextController {
         // validar files
         try {
             await this._saveFiles({ request, id: enviado.id });
+            // copiar archivos
+            await this._copyFiles(derivado.id, enviado.id);
             // response
             return enviado;
         } catch (error) {
