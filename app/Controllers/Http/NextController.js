@@ -208,14 +208,14 @@ class NextController {
             // response
             return enviado;
         } catch (error) {
-            await derivado.delete();
-            await enviado.delete();
+            // eliminar
+            await Tracking.query().whereIn('id', [derivado.id, enviado.id]).delete()
             // restaurar
-            this.tracking.current = 1;
-            this.tracking.visible = 1;
-            await this.tracking.save();
-            // response
-            return this.tracking;
+            await Tracking.query()
+                .where('id', this.tracking.id)
+                .update({ current: 1, visible: 1 });
+            // response error
+            throw new CustomException(error.message, error.name, error.status || 501); 
         }
     }
 
@@ -291,6 +291,11 @@ class NextController {
         let aceptado = await Tracking.create(payload_aceptado);
         // crear pendiente
         let pendiente = await Tracking.create(payload_pendiente);
+        // cambiar archivos
+        await File.query()
+            .where('object_type', 'App/Models/Tracking')
+            .where('object_id', this.tracking.id)
+            .update({ object_id: pendiente.id });
         // response
         return pendiente;
     }
@@ -345,6 +350,10 @@ class NextController {
         let rechazado = await Tracking.create(payload_rechazado);
         // crear pendiente
         let pendiente = await Tracking.create(payload_pendiente);
+        await File.query()
+            .where('object_type', 'App/Models/Tracking')
+            .where('object_id', this.tracking.id)
+            .update({ object_id: pendiente.id });
         // response
         return pendiente;
     }
@@ -392,14 +401,17 @@ class NextController {
             // response
             return pendiente;
         } catch (error) {
-            await respondido.delete();
-            await pendiente.delete();
+            // eliminar
+            await Tracking.query().whereIn('id', [respondido.id, pendiente.id]).delete()
             // restaurar
-            this.tracking.current = 1;
-            this.tracking.visible = 1;
-            await this.tracking.save();
-            // response
-            return this.tracking;
+            await Tracking.query()
+                .where('id', this.tracking.id)
+                .update({
+                    current: 1,
+                    visible: 1
+                });
+            // response error
+            throw new CustomException(error.message, error.name, error.status || 501); 
         }
     }
 }

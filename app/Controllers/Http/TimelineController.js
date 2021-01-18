@@ -74,6 +74,7 @@ class TimelineController {
             tra.dependencia_origen = dependencias.where('id', tra.dependencia_origen_id).first() || {};
             tra.dependencia_destino = dependencias.where('id', tra.dependencia_destino_id).first() || {};
             tra.person = people.where('id', tra.person_id).first() || {};
+            tra.files = files.where('object_type', 'App/Models/Tracking').where('object_id', tra.id).toArray() || [];
             return tra;
         });
         // response
