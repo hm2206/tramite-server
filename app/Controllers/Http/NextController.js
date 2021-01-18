@@ -105,7 +105,7 @@ class NextController {
 
     // copiar archivos
     _copyFiles = async (tracking_id, tracking_origen_id) => {
-        let files = await File.query()
+        let files = await DB.table('files')
             .where('object_type', 'App/Models/Tracking')
             .where('object_id', tracking_origen_id)
             .select(DB.raw(`${tracking_id} as object_id`), 'object_type', 'name', 'extname', 'size', 'url', 'real_path', 'tag')
