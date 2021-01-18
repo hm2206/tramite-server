@@ -299,6 +299,7 @@ class NextController {
         if (!notificar) throw new CustomException("No se encontró la dependencia a donde notificar");
         payload_aceptado.user_verify_id = notificar.user_verify_id;
         payload_aceptado.person_id = notificar.person_id;
+        payload_pendiente.person_id = notificar.person_id;
         // deshabilitar cadena
         await this._disableCurrent();
         // crear aceptado
