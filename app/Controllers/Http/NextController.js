@@ -192,6 +192,7 @@ class NextController {
             payload_enviado.user_verify_id = current_user.id;
             payload_enviado.modo = 'DEPENDENCIA';
             payload_derivado.person_id = current_user.person_id;
+            payload_enviado.person_id = current_user.person_id;
         } else {
             payload_enviado.user_verify_id = request.input('user_destino_id');
             if (payload_enviado.user_verify_id == this.auth.id) 
@@ -200,6 +201,7 @@ class NextController {
             let current_user = await this._getUser({ id: payload_enviado.user_verify_id, request });
             if (!Object.keys(current_user).length) throw new CustomException("El usuario no existe");
             payload_derivado.person_id = current_user.person_id;
+            payload_enviado.person_id = current_user.person_id;
         }
         // configurar derivado
         payload_derivado.dependencia_origen_id = current_tracking.dependencia_id;
@@ -299,7 +301,6 @@ class NextController {
         if (!notificar) throw new CustomException("No se encontró la dependencia a donde notificar");
         payload_aceptado.user_verify_id = notificar.user_verify_id;
         payload_aceptado.person_id = notificar.person_id;
-        payload_pendiente.person_id = notificar.person_id;
         // deshabilitar cadena
         await this._disableCurrent();
         // crear aceptado
