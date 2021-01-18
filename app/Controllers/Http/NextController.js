@@ -203,9 +203,19 @@ class NextController {
         let derivado = await Tracking.create(payload_derivado);
         let enviado = await Tracking.create(payload_enviado);
         // validar files
-        await this._saveFiles({ request, id: enviado.id });
-        // response
-        return enviado;
+        try {
+            await this._saveFiles({ request, id: enviado.id });
+            // response
+            return enviado;
+        } catch (error) {
+            await derivado.delete();
+            await enviado.delete();
+            // restaurar
+            this.tracking.current = 1;
+            await this.tracking.save();
+            // response
+            return this.tracking;
+        }
     }
 
     // anular
@@ -376,9 +386,19 @@ class NextController {
         let respondido = await Tracking.create(payload_respondido);
         let pendiente = await Tracking.create(payload_pendiente);
         // validar files
-        await this._saveFiles({ request, id: pendiente.id });
-        // response
-        return pendiente;
+        try {
+            await this._saveFiles({ request, id: pendiente.id });
+            // response
+            return pendiente;
+        } catch (error) {
+            await respondido.delete();
+            await pendiente.delete();
+            // restaurar
+            this.tracking.current = 1;
+            await this.tracking.save();
+            // response
+            return this.tracking;
+        }
     }
 }
 
