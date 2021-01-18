@@ -50,6 +50,7 @@ class TramiteController {
             document_number: request.input('document_number'),
             tramite_type_id: request.input('tramite_type_id'),
             folio_count: request.input('folio_count'),
+            observation: request.input('observation'),
             asunto: request.input('asunto'),
             dependencia_origen_id: dependencia.id
         }

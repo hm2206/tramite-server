@@ -106,6 +106,22 @@ class FileController {
             files
         }
     };
+
+    // eliminar archivo
+    destroy = async ({ params, request }) => {
+        // obtener archivo
+        let file = await File.find(params.id);
+        if (!file) throw new NotFoundModelException("El archivo");
+        let exists = await Drive.exists(file.real_path);
+        if (exists) await Drive.delete(file.real_path); 
+        await file.delete();
+        // response
+        return {
+            success: true, 
+            status: 201,
+            message: "EL archivo se eliminó correctamente!"
+        }
+    }
 }
 
 module.exports = FileController

@@ -262,6 +262,7 @@ class NextController {
         payload_aceptado.description = request.input('description');
         payload_aceptado.dependencia_id = current_tracking.dependencia_origen_id;
         payload_aceptado.current = 0;
+        payload_aceptado.revisado = 1;
         payload_aceptado.status = this.status;
         // obtener notificación
         let notificar = await Tracking.query()

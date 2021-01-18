@@ -14,7 +14,8 @@ Route("get", "TrackingController.show");
 // Files
 Route("get", "FileController.handle", false);
 Route("post", "FileController.store").middleware(['jwt', "entityId"]);
-Route("get", "FileController.object_type");
+Route("get", "FileController.object_type").middleware(['jwt']);
+Route("post", "FileController.destroy").middleware(['jwt']);
 
 // Verificar
 Route("post", "VerifyController.handle").middleware(['jwt', 'entityId', 'dependenciaId']);

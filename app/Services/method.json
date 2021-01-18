@@ -53,6 +53,12 @@
     "description": "Listar archivo del objecto",
     "action_type": "VIEW"
   },
+  "FileController.destroy": {
+    "name": "FileController.destroy",
+    "url": "api/file/:id/destroy",
+    "description": "Eliminar archivo",
+    "action_type": "DELETE"
+  },
   "Auth/AuthRoleController.handle": {
     "name": "Auth/AuthRoleController.handle",
     "url": "api/auth/role",

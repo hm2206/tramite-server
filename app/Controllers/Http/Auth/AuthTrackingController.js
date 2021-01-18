@@ -26,7 +26,7 @@ class AuthTrackingController {
     // obtener remitentes
     _people = async (request, trackings) => {
         let db = collect(trackings.data);
-        let plucked = db.pluck('person_id', 'tramite.person_id');
+        let plucked = db.pluck('person_id');
         let ids = collect([...plucked.keys().toArray(), ...plucked.values().toArray()]).toArray();
         let people = await request.api_authentication.get(`find_people?id[]=${ids.join('&id[]=')}`)
             .then(res => res.data)
