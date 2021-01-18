@@ -212,6 +212,7 @@ class NextController {
             await enviado.delete();
             // restaurar
             this.tracking.current = 1;
+            this.tracking.visible = 1;
             await this.tracking.save();
             // response
             return this.tracking;
@@ -395,6 +396,7 @@ class NextController {
             await pendiente.delete();
             // restaurar
             this.tracking.current = 1;
+            this.tracking.visible = 1;
             await this.tracking.save();
             // response
             return this.tracking;
