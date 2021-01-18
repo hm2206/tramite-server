@@ -108,10 +108,7 @@ class NextController {
         let files = await DB.table('files')
             .where('object_type', 'App/Models/Tracking')
             .where('object_id', tracking_origen_id)
-            .select(DB.raw(`${tracking_id} as object_id`), 'object_type', 'name', 'extname', 'size', 'url', 'real_path', 'tag')
-            .fetch();
-        // convertir
-        files = await files.toJSON();
+            .select(DB.raw(`${tracking_id} as object_id`), 'object_type', 'name', 'extname', 'size', 'url', 'real_path', 'tag');
         // copiar
         await File.createMany(files);
     }
@@ -415,6 +412,8 @@ class NextController {
         // validar files
         try {
             await this._saveFiles({ request, id: pendiente.id });
+            // copiar archivos
+            await this._copyFiles(respondido.id, pendiente.id);
             // response
             return pendiente;
         } catch (error) {
