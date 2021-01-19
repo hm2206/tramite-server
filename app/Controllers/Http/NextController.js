@@ -26,6 +26,7 @@ class NextController {
         PENDIENTE: ['DERIVADO', 'RESPONDIDO', 'FINALIZADO'],
         ENVIADO: ['ACEPTADO', 'RECHAZADO']
     };
+    hidden = ['REGISTER'];
 
     // obtener tracking
     _getTracking = async ({ params, request }) => {
@@ -36,12 +37,16 @@ class NextController {
             .where('tra.entity_id', this.entity.id)
             .where('trackings.dependencia_id', this.dependencia.id)
             .where('trackings.id', params.id)
-            .where('trackings.revisado', 1)
             .where('trackings.current', 1)
             .select('trackings.*')
             .first();
         // validar
         if (!this.tracking) throw new NotFoundModelException("el seguimiento");
+        if (this.hidden.includes(this.tracking.status)) {
+            if (this.tracking.visible == 1) throw new CustomException(`El trámite ya fué verificado`);
+        } else {
+            if (this.tracking.visible == 0) throw new CustomException(`El trámite aún no está verificado`);
+        }
     }
 
     // obtener user
@@ -110,7 +115,7 @@ class NextController {
             .where('object_id', tracking_origen_id)
             .select(DB.raw(`${tracking_id} as object_id`), 'object_type', 'name', 'extname', 'size', 'url', 'real_path', 'tag');
         // copiar
-        await File.createMany(files);
+        if (files.length) await File.createMany(files);
     }
 
     // manejador
@@ -141,9 +146,10 @@ class NextController {
     // derivar
     _derivado = async ({ params, request }) => {
         let rules = {
-            dependencia_destino_id: "required",
-            description: 'required|max:255'
+            dependencia_destino_id: "required"
         }
+        // validar
+        if (!this.tracking.first) rules.description = 'required|max:255';
         // validar si es a la misma dependencia
         let self_dependencia = this.dependencia.id == request.input('dependencia_destino_id') ? 1 : 0;
         if (self_dependencia) rules.user_destino_id = 'required';
@@ -431,6 +437,31 @@ class NextController {
             // response error
             throw new CustomException(error.message, error.name, error.status || 501); 
         }
+    }
+
+    // finalizar
+    _finalizado = async ({ params, request }) => {
+        // validar
+        await validation(validateAll, request.all(), {
+            description: 'required|max:255'
+        });
+        // transacción
+        let current_tracking = await this.tracking.toJSON();
+        delete current_tracking.id;
+        delete current_tracking.tramite;
+        let payload = { ...current_tracking };
+        payload.status = this.status;
+        payload.user_id = this.auth.id;
+        payload.first = 0;
+        payload.revisado = 1;
+        payload.current = 1;
+        payload.description = request.input('description');
+        // verificar modo 
+        await this._validateModo();
+        // deshabilitar visibilidad
+        await this._disableCurrent();
+        // crear anulado
+        return await Tracking.create(payload);
     }
 }
 
