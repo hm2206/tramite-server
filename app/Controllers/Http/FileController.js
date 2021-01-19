@@ -107,6 +107,38 @@ class FileController {
         }
     };
 
+    // actualizar
+    update = async ({ params, request }) => {
+        // obtener archivo
+        let file = await File.find(params.id);
+        if (!file) throw new NotFoundModelException("El archivo");
+        // guardae archivo
+        let current_file = await Storage.saveFile(request, "file", {
+            multifiles: false,
+            required: true,
+            size: "6mb"
+        }, Helpers, {
+            path: `${file.object_type.split('/').pop()}/${uid(10)}`.toLowerCase(),
+            options: {
+                overwrite: true
+            }
+        })
+        // validar guardado
+        if (current_file.success) if (await Drive.exists(file.real_path)) await Drive.delete(file.real_path);
+        // actualizar file
+        file.url = LINK("tmp", current_file.path),
+        file.real_path = current_file.realPath;
+        file.size = current_file.size;
+        file.tag = request.input('tag');
+        await file.save();
+        // response
+        return {
+            success: true,
+            status: 201,
+            message: "El archivo se actualizó correctamente!"
+        };
+    }
+
     // eliminar archivo
     destroy = async ({ params, request }) => {
         // obtener archivo

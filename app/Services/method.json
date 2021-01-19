@@ -53,6 +53,12 @@
     "description": "Listar archivo del objecto",
     "action_type": "VIEW"
   },
+  "FileController.update": {
+    "name": "FileController.update",
+    "url": "api/file/:id/update",
+    "description": "Actualizar archivo",
+    "action_type": "UPDATE"
+  },
   "FileController.destroy": {
     "name": "FileController.destroy",
     "url": "api/file/:id/destroy",
