@@ -8,6 +8,14 @@ const NotFoundModelException = require('../../Exceptions/NotFoundModelException'
 
 class TimelineController {
 
+    // obtener entitdad
+    _entity = async (request, tramite) => {
+        let entity = await request.api_authentication.get(`entity/${tramite.entity_id || '_error'}`)
+            .then(res => res.data)
+            .catch(err => ({}));
+        return entity;
+    }
+
     // obtener dependencias
     _dependencias = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
@@ -78,6 +86,7 @@ class TimelineController {
             .paginate(page || 1, 20);
         trackings = await trackings.toJSON();
         // obtener dependencias
+        let entity = await this._entity(request, tramite);
         let dependencias = await this._dependencias(request, tramite, trackings);
         let people = await this._people(request, tramite, trackings);
         let files = await this._files(request, tramite, trackings);
@@ -91,8 +100,10 @@ class TimelineController {
             return tra;
         });
         // trámite
+        tramite.entity = entity;
         tramite.person = people.where('id', tramite.person_id).first() || {};
         tramite.dependencia_origen = dependencias.where('id', tramite.dependencia_origen_id).first() || {};
+        tramite.files = files.where('object_type', 'App/Models/Tramite').where('object_id', tramite.id).toArray() || [];
         // response
         return {
             success: true,
