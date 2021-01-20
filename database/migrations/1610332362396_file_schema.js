@@ -15,6 +15,7 @@ class FileSchema extends Schema {
       table.string('url').notNullable()
       table.string('real_path').notNullable()
       table.string('tag');
+      table.string('observation');
       table.timestamps()
     })
   }

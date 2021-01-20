@@ -139,6 +139,22 @@ class FileController {
         };
     }
 
+    // actualizar observación
+    observation = async ({ params, request }) => {
+        // obtener archivo
+        let file = await File.find(params.id);
+        if (!file) throw new NotFoundModelException("El archivo");
+        // actualizar observación
+        file.observation = request.input('observation', '');
+        await file.save();
+        // response
+        return { 
+            success: true,
+            status: 201,
+            message: `El observación se guardo correctamente!`
+        }
+    }
+
     // eliminar archivo
     destroy = async ({ params, request }) => {
         // obtener archivo

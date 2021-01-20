@@ -59,6 +59,12 @@
     "description": "Actualizar archivo",
     "action_type": "UPDATE"
   },
+  "FileController.observation": {
+    "name": "FileController.observation",
+    "url": "api/file/:id/observation",
+    "description": "Actualizar observación del archivo",
+    "action_type": "UPDATE"
+  },
   "FileController.destroy": {
     "name": "FileController.destroy",
     "url": "api/file/:id/destroy",

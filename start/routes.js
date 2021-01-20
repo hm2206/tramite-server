@@ -16,6 +16,7 @@ Route("get", "FileController.handle", false);
 Route("post", "FileController.store").middleware(['jwt', "entityId"]);
 Route("get", "FileController.object_type").middleware(['jwt']);
 Route("post", "FileController.update").middleware(['jwt']);
+Route("post", "FileController.observation").middleware(['jwt']);
 Route("post", "FileController.destroy").middleware(['jwt']);
 
 // Verificar
