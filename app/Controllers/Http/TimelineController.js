@@ -9,10 +9,14 @@ const NotFoundModelException = require('../../Exceptions/NotFoundModelException'
 class TimelineController {
 
     // obtener dependencias
-    _dependencias = async (request, trackings) => {
+    _dependencias = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
         let plucked = db.pluck('dependencia_origen_id', 'dependencia_destino_id');
-        let ids = collect([...plucked.keys().toArray(), ...plucked.values().toArray()]).toArray();
+        let ids = collect([
+            ...plucked.keys().toArray(), 
+            ...plucked.values().toArray(),
+            tramite.dependencia_origen_id
+        ]).toArray();
         // obtener dependencias
         let { dependencia } = await request.api_authentication.get(`dependencia?ids[]=${ids.join('&ids[]=')}`)
             .then(res => res.data)
@@ -26,10 +30,14 @@ class TimelineController {
     }
 
     // obtener remitentes
-    _people = async (request, trackings) => {
+    _people = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
         let plucked = db.pluck('person_id');
-        let ids = collect([...plucked.keys().toArray(), ...plucked.values().toArray()]).toArray();
+        let ids = collect([
+            ...plucked.keys().toArray(), 
+            ...plucked.values().toArray(),
+            tramite.person_id
+        ]).toArray();
         let people = await request.api_authentication.get(`find_people?id[]=${ids.join('&id[]=')}`)
             .then(res => res.data)
             .catch(err => ([]));
@@ -38,10 +46,14 @@ class TimelineController {
     }
 
     // obtener archivos
-    _files = async (request, trackings) => {
+    _files = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
         let plucked = db.pluck('id', 'tramite_id');
-        let ids = collect([...plucked.keys().toArray(), ...plucked.values().toArray()]).toArray();
+        let ids = collect([
+            ...plucked.keys().toArray(), 
+            ...plucked.values().toArray(),
+            tramite.id
+        ]).toArray();
         let files = await File.query()
             .whereIn('object_type', ['App/Models/Tramite', 'App/Models/Tracking'])
             .whereIn('object_id', ids)
@@ -51,10 +63,11 @@ class TimelineController {
         return collect(files);
     }
 
-
+    // línea de tiempo y trámite
     handle = async ({ params, request }) => {
         let { page, query_search } = request.all();
         let tramite = await Tramite.query()
+            .with('tramite_type')
             .where('slug', params.slug)
             .first();
         if (!tramite) throw new NotFoundModelException('El trámite');
@@ -65,9 +78,9 @@ class TimelineController {
             .paginate(page || 1, 20);
         trackings = await trackings.toJSON();
         // obtener dependencias
-        let dependencias = await this._dependencias(request, trackings);
-        let people = await this._people(request, trackings);
-        let files = await this._files(request, trackings);
+        let dependencias = await this._dependencias(request, tramite, trackings);
+        let people = await this._people(request, tramite, trackings);
+        let files = await this._files(request, tramite, trackings);
         // configurar datos
         await trackings.data.map(tra => {
             tra.dependencia = dependencias.where('id', tra.dependencia_id).first() || {};
@@ -77,6 +90,9 @@ class TimelineController {
             tra.files = files.where('object_type', 'App/Models/Tracking').where('object_id', tra.id).toArray() || [];
             return tra;
         });
+        // trámite
+        tramite.person = people.where('id', tramite.person_id).first() || {};
+        tramite.dependencia_origen = dependencias.where('id', tramite.dependencia_origen_id).first() || {};
         // response
         return {
             success: true,
