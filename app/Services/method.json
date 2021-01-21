@@ -97,8 +97,8 @@
   },
   "Auth/AuthTramiteController.show": {
     "name": "Auth/AuthTramiteController.show",
-    "url": "api/auth/tramite/:slug",
-    "description": "Obtener tramite en el estado actual segun dependencia",
+    "url": "api/auth/tramite/:id/tracking",
+    "description": "Obtener tramite en el estado actual segun dependencia y por id",
     "action_type": "VIEW"
   }
 }

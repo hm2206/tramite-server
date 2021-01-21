@@ -20,7 +20,7 @@ class AuthTramiteController {
             .with('verify')
             .with('tramite', (build) => {
                 build.with('tramite_type');
-            }).where('tra.slug', params.slug)
+            }).where('trackings.id', params.id)
             .where('tra.entity_id', entity.id)
             .where('dependencia_id', dependencia.id)
             .where('visible', 1)

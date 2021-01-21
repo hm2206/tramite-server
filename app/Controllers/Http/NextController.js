@@ -77,7 +77,13 @@ class NextController {
         // quitar tracking actual
         await Tracking.query()
             .where('tramite_id', this.tracking.tramite_id)
-            .update({ current: 0, visible: 0 });
+            .update({ current: 0 });
+        // deshabilitar por status
+        await Tracking.query()
+            .where('tramite_id', this.tracking.id)
+            .where('current', 0)
+            .whereIn('status', ['REGISTRADO', 'PENDIENTE'])
+            .update({ visible: 0 });
     }
 
     // switch modo
