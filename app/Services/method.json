@@ -5,6 +5,12 @@
     "description": "Crear Trámite",
     "action_type": "CREATE"
   },
+  "TramiteController.codeQr": {
+    "name": "TramiteController.codeQr",
+    "url": "api/tramite/:slug/code_qr",
+    "description": "Mostrar código QR",
+    "action_type": "VIEW"
+  },
   "TramiteTypeController.index": {
     "name": "TramiteTypeController.index",
     "url": "api/tramite_type",

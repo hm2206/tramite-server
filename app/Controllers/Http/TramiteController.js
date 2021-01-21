@@ -85,7 +85,7 @@ class TramiteController {
     // generar código QR
     codeQr = async ({ params, response }) => {
         try {
-            let tramite = await Tramite.find(params.id);
+            let tramite = await Tramite.findBy('slug', params.slug);
             if (!tramite) throw new Error("No se encontró el tramite");
             let link = `${Env.get('CLIENT_TRAMITE')}?slug=${tramite.slug}`;
             let code = await codeQR.toBuffer(link);

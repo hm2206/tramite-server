@@ -61,7 +61,9 @@ class AuthTrackingController {
         let auth = request.$auth;
         // query
         let trackings = Tracking.query()
-            .with('tramite')
+            .with('tramite', (build) => {
+                build.with('tramite_type')
+            })
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .select('trackings.*')
             .orderBy('trackings.created_at', status.includes('REGISTRADO') || status.includes('PENDIENTE') ? 'ASC' : 'DESC')

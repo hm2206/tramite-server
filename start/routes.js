@@ -3,6 +3,7 @@
 const Route = require('../app/Services/route');
 
 // Tramite
+Route("get", "TramiteController.codeQr");
 Route("post", "TramiteController.store").middleware(['jwt', 'entityId', 'dependenciaId']);
 
 // Tipo de trámite
