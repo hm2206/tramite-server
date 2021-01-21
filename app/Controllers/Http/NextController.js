@@ -145,7 +145,8 @@ class NextController {
             success: true,
             status: 201,
             message: `El trámite fué: ${this.status.toUpperCase()}, correctamente!`,
-            tracking: newTracking
+            tracking: newTracking,
+            current_tracking: this.tracking
         }
     }
 
@@ -181,10 +182,10 @@ class NextController {
         let payload_enviado = Object.assign({}, current_tracking);
         let payload_derivado = Object.assign({}, current_tracking);
         // config datos
-        payload_enviado.description = request.input('description');
+        payload_enviado.description = request.input('description', '');
         payload_enviado.user_id = this.auth.id;
-        payload_enviado.dependencia_destino_id = request.input('dependencia_destino_id');
-        payload_enviado.dependencia_id = request.input('dependencia_destino_id');
+        payload_enviado.dependencia_destino_id = request.input('dependencia_destino_id', '');
+        payload_enviado.dependencia_id = request.input('dependencia_destino_id', '');
         payload_enviado.dependencia_origen_id = current_tracking.dependencia_id;
         payload_enviado.alert = 0;
         payload_enviado.current = 1;
@@ -234,13 +235,14 @@ class NextController {
             // copiar archivos
             await this._copyFiles(derivado.id, enviado.id);
             // response
+            this.tracking = derivado;
             return enviado;
         } catch (error) {
             // eliminar
             await Tracking.query().whereIn('id', [derivado.id, enviado.id]).delete()
             // restaurar
             await Tracking.query()
-                .where('id', this.tracking.id)
+                .where('id', this.tracking.id || '_error')
                 .update({ current: 1, visible: 1 });
             // response error
             throw new CustomException(error.message, error.name, error.status || 501); 
@@ -269,7 +271,10 @@ class NextController {
         // deshabilitar visibilidad
         await this._disableCurrent();
         // crear anulado
-        return await Tracking.create(payload);
+        let anulado = await Tracking.create(payload);
+        // response
+        this.tracking = anulado;
+        return anulado
     }
 
     // aceptar
@@ -325,6 +330,7 @@ class NextController {
             .where('object_id', this.tracking.id)
             .update({ object_id: pendiente.id });
         // response
+        this.tracking = aceptado;
         return pendiente;
     }
 
@@ -383,6 +389,7 @@ class NextController {
             .where('object_id', this.tracking.id)
             .update({ object_id: pendiente.id });
         // response
+        this.tracking = rechazado;
         return pendiente;
     }
 
@@ -429,6 +436,7 @@ class NextController {
             // copiar archivos
             await this._copyFiles(respondido.id, pendiente.id);
             // response
+            this.tracking = respondido;
             return pendiente;
         } catch (error) {
             // eliminar
@@ -467,7 +475,10 @@ class NextController {
         // deshabilitar visibilidad
         await this._disableCurrent();
         // crear anulado
-        return await Tracking.create(payload);
+        let finalizado = await Tracking.create(payload);
+        // response
+        this.tracking = finalizado;
+        return finalizado;
     }
 }
 

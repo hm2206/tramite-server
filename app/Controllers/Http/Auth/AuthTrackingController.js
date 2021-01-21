@@ -66,7 +66,7 @@ class AuthTrackingController {
             })
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .select('trackings.*')
-            .orderBy('trackings.created_at', status.includes('REGISTRADO') || status.includes('PENDIENTE') ? 'ASC' : 'DESC')
+            .orderBy('trackings.created_at', status.includes('ENVIADO') || status.includes('PENDIENTE') ? 'ASC' : 'DESC')
             .where('visible', 1)
             .where('trackings.dependencia_id', dependencia.id)
             .whereIn('modo', modos);
