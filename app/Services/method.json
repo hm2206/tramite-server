@@ -83,6 +83,12 @@
     "description": "Obtener listado de tracking según modo",
     "action_type": "VIEW"
   },
+  "Auth/AuthStatusController.handle": {
+    "name": "Auth/AuthStatusController.handle",
+    "url": "api/auth/status",
+    "description": "Obtener los status de los trámites que te pertenecen",
+    "action_type": "VIEW"
+  },
   "Auth/AuthTramiteController.show": {
     "name": "Auth/AuthTramiteController.show",
     "url": "api/auth/tramite/:slug",

@@ -3,6 +3,7 @@
 const Tracking = use('App/Models/Tracking');
 const collect = require('collect.js');
 const File = use('App/Models/File');
+const DB = use('Database');
 
 class AuthTrackingController {
 
@@ -51,8 +52,9 @@ class AuthTrackingController {
 
     // executar
     handle = async ({ params, request }) => {
-        let { page, query_search } = request.all();
+        let { page, query_search, status } = request.all();
         let modos = `${params.modo}`.toUpperCase() == 'DEPENDENCIA' ? ['DEPENDENCIA'] : ['DEPENDENCIA', 'YO'];
+        status = typeof status == undefined ? ['REGISTRADO'] : typeof status == 'string' ? [status] : status;
         // filtros
         let entity = request.$entity;
         let dependencia = request.$dependencia;
@@ -62,11 +64,22 @@ class AuthTrackingController {
             .with('tramite')
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .select('trackings.*')
+            .orderBy('trackings.created_at', status.includes('REGISTRADO') || status.includes('PENDIENTE') ? 'ASC' : 'DESC')
             .where('visible', 1)
             .where('trackings.dependencia_id', dependencia.id)
             .whereIn('modo', modos);
         // filtros
         if (modos.includes('YO')) trackings.where('trackings.user_verify_id', auth.id);
+        if (status.length) trackings.whereIn('trackings.status', status);
+        if (query_search) trackings.join('files as f', 'f.object_id', 'tra.id')
+            .where('f.object_type', 'App/Models/Tramite')
+            .where(DB.raw(`(tra.slug like '%${query_search}%' OR f.name like '%${query_search}%')`))
+            .groupBy('trackings.id', 'trackings.description', 'trackings.tramite_id', 'trackings.dependencia_id',
+                'trackings.dependencia_origen_id', 'trackings.dependencia_destino_id', 'trackings.user_id',
+                'trackings.user_verify_id', 'trackings.person_id', 'trackings.current', 'trackings.alert',
+                'trackings.revisado', 'trackings.modo', 'trackings.visible', 'trackings.status', 'trackings.first', 
+                'trackings.state'
+            )
         // paginación
         trackings = await trackings.paginate(page || 1, 20);
         trackings = await trackings.toJSON();
@@ -84,7 +97,7 @@ class AuthTrackingController {
             d.person = await people.where('id', d.person_id).first() || {};
             d.files = await files.where('object_type', 'App/Models/Tracking').where('object_id', d.id).toArray() || [];
             // config trámite
-            d.tramite.dependencia = await dependencias.where('id', d.tramite.dependencia_origen_id).first() || {};
+            d.tramite.dependencia_origen = await dependencias.where('id', d.tramite.dependencia_origen_id).first() || {};
             d.tramite.person = await people.where('id', d.tramite.person_id).first() || {};
             d.tramite.files = await files.where('object_type', 'App/Models/Tramite').where('object_id', d.tramite.id).toArray() || [];
             return d;
