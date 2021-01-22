@@ -131,11 +131,10 @@ class AuthTrackingController {
             // validar limite de dia
             let semaforos = await configs.where('variable', 'DAY_LIMIT').toArray();
             await semaforos.map((s, indexS) => {
-                if (!d.semaforo && d.day <= s.value) {
-                    d.semaforo = s.key;
-                }
+                if (indexS == 0 && d.day <= s.value) d.semaforo = s.key;
+                if (indexS > 0 && d.day >= s.value) d.semaforo = s.key;
                 // validar el último
-                if (indexS == (semaforos.length - 1)) d.semaforo = s.key;
+                if (!d.semaforo && indexS == (semaforos.length - 1)) d.semaforo = s.key;
             });
             // response
             return d;

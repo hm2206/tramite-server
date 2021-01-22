@@ -31,11 +31,13 @@ class TimelineController {
     // obtener dependencias
     _dependencias = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
-        let plucked = db.pluck('dependencia_origen_id', 'dependencia_destino_id');
+        let dependencia_origen_id = db.pluck('dependencia_origen_id').toArray();
+        let dependencia_destino_id = db.pluck('dependencia_destino_id').toArray();
+        let tramite_dependencia_id = db.pluck('tramite_dependencia_id').toArray();
         let ids = collect([
-            ...plucked.keys().toArray(), 
-            ...plucked.values().toArray(),
-            tramite.dependencia_origen_id
+            ...dependencia_origen_id,
+            ...dependencia_destino_id,
+            ...tramite_dependencia_id
         ]).toArray();
         // obtener dependencias
         let { dependencia } = await request.api_authentication.get(`dependencia?ids[]=${ids.join('&ids[]=')}`)
@@ -52,11 +54,11 @@ class TimelineController {
     // obtener remitentes
     _people = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
-        let plucked = db.pluck('person_id');
+        let person_id = db.pluck('person_id').toArray();
+        let tramite_person_id = db.pluck('tramite_person_id').toArray();
         let ids = collect([
-            ...plucked.keys().toArray(), 
-            ...plucked.values().toArray(),
-            tramite.person_id
+            ...person_id,
+            ...tramite_person_id
         ]).toArray();
         let people = await request.api_authentication.get(`find_people?id[]=${ids.join('&id[]=')}`)
             .then(res => res.data)
@@ -68,11 +70,11 @@ class TimelineController {
     // obtener archivos
     _files = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
-        let plucked = db.pluck('id', 'tramite_id');
+        let tracking_id = db.pluck('id').toArray();
+        let tramite_id = db.pluck('tramite_id').toArray();
         let ids = collect([
-            ...plucked.keys().toArray(), 
-            ...plucked.values().toArray(),
-            tramite.id
+            ...tracking_id,
+            ...tramite_id
         ]).toArray();
         let files = await File.query()
             .whereIn('object_type', ['App/Models/Tramite', 'App/Models/Tracking'])
@@ -97,15 +99,22 @@ class TimelineController {
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .where('tra.slug', tramite.slug)
             .whereIn('trackings.status', ['REGISTRADO', 'DERIVADO', 'ACEPTADO', 'RECHAZADO', 'RESPONDIDO', 'ANULADO', 'FINALIZADO'])
-            .select('trackings.*')
+            .select('trackings.*', 'tra.dependencia_origen_id as tramite_dependencia_id', 'tra.person_id as tramite_person_id')
             .paginate(page || 1, 20);
         trackings = await trackings.toJSON();
         // obtener dependencias
         let entity = await this._entity(request, tramite);
+        let tramites = await this._tramites(request, trackings);
         let dependencias = await this._dependencias(request, tramite, trackings);
         let people = await this._people(request, tramite, trackings);
         let files = await this._files(request, tramite, trackings);
-        let tramites = await this._tramites(request, trackings);
+        // configurar tramites
+        await tramites.map(t => {
+            t.dependencia_origen = dependencias.where('id', t.dependencia_origen_id).first() || {};
+            t.person = people.where('id', t.person_id).first() || {};
+            t.files = files.where('object_type', 'App/Models/Tramite').where('object_id', t.id).toArray() || [];
+            return t;
+        })
         // configurar datos
         await trackings.data.map(tra => {
             tra.dependencia = dependencias.where('id', tra.dependencia_id).first() || {};
