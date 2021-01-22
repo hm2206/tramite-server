@@ -2,6 +2,7 @@
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
+const moment = require('moment');
 
 class Tracking extends Model {
 
@@ -9,12 +10,25 @@ class Tracking extends Model {
         return ['visible'];
     }
 
+    static get computed () {
+        return ['day']
+    }
+
     static boot() {
         super.boot();
+        this.addHook('beforeSave', 'TrackingHook.formatter');
         this.addHook('afterCreate', 'TrackingHook.createVerify');
         this.addHook('afterDelete', 'TrackingHook.deleteVerify');
     }
 
+    // computed
+    getDay = (obj) => {
+        let current = moment(moment().format('YYYY-MM-DD'));
+        let comparar = moment(moment(obj.created_at || current).format('YYYY-MM-DD'));
+        return current.diff(comparar, 'days');
+    }
+
+    // relaciones
     tramite = () => {
         return this.belongsTo('App/Models/Tramite');
     }

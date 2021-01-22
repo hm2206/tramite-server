@@ -82,7 +82,7 @@ class NextController {
         await Tracking.query()
             .where('tramite_id', this.tracking.id)
             .where('current', 0)
-            .whereIn('status', ['REGISTRADO', 'PENDIENTE'])
+            .whereIn('status', ['REGISTRADO', 'PENDIENTE', 'ENVIADO'])
             .update({ visible: 0 });
     }
 
@@ -174,6 +174,7 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.id
         delete current_tracking.tramite;
+        delete current_tracking.day;
         current_tracking.created_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.updated_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.revisado = 1;
@@ -259,6 +260,7 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.id;
         delete current_tracking.tramite;
+        delete current_tracking.day;
         let payload = { ...current_tracking };
         payload.status = this.status;
         payload.user_id = this.auth.id;
@@ -289,6 +291,7 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.id;
         delete current_tracking.tramite;
+        delete current_tracking.day;
         current_tracking.created_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.updated_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.user_id = this.auth.id;
@@ -330,7 +333,7 @@ class NextController {
             .where('object_id', this.tracking.id)
             .update({ object_id: pendiente.id });
         // response
-        this.tracking = aceptado;
+        this.tracking = pendiente;
         return pendiente;
     }
 
@@ -346,6 +349,7 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.id;
         delete current_tracking.tramite;
+        delete current_tracking.day;
         current_tracking.created_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.updated_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.user_id = this.auth.id;
@@ -405,6 +409,7 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.tramite;
         delete current_tracking.id;
+        delete current_tracking.day;
         // obtener oficina origen
         let oficina_origen = await Tracking.query()
             .where('tramite_id', this.tracking.tramite_id)
@@ -463,6 +468,7 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.id;
         delete current_tracking.tramite;
+        delete current_tracking.day;
         let payload = { ...current_tracking };
         payload.status = this.status;
         payload.user_id = this.auth.id;

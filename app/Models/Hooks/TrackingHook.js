@@ -5,6 +5,10 @@ const Verify = use('App/Models/Verify');
 const Role = use('App/Models/Role');
 const moment = require('moment');
 
+TrackingHook.formatter = async (tracking) => {
+    await delete tracking.day;
+}
+
 TrackingHook.createVerify = async (tracking) => {
     // verificar revisado
     let allows = ['REGISTRADO', 'PENDIENTE'];

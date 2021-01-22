@@ -4,6 +4,7 @@ const Tracking = use('App/Models/Tracking');
 const collect = require('collect.js');
 const File = use('App/Models/File');
 const DB = use('Database');
+const Config = use('App/Models/Config');
 
 class AuthTrackingController {
 
@@ -50,6 +51,20 @@ class AuthTrackingController {
         return collect(files);
     }
 
+    // obtener configs
+    _config = async (request, trackings) => {
+        let datos = collect(trackings.data);
+        let keys = datos.pluck('status').toArray();
+        let configs = await Config.query()
+            .where('variable', 'NEXT')
+            .whereIn('key', keys)
+            .fetch();
+        // obtener JSON
+        configs = await configs.toJSON();
+        // reponse
+        return collect(configs);
+    }
+
     // executar
     handle = async ({ params, request }) => {
         let { page, query_search, status } = request.all();
@@ -91,6 +106,10 @@ class AuthTrackingController {
         let people = await  this._people(request, trackings);
         // obtener files
         let files = await this._files(request, trackings);
+        // obtener configs
+        let configs = await this._config(request, trackings);
+        let configs_index = {};
+        let configs_keys = configs.pluck('key').toArray();
         // setting datos
         await trackings.data.map(async (d, indexD) => {
             // config tracking
@@ -102,6 +121,16 @@ class AuthTrackingController {
             d.tramite.dependencia_origen = await dependencias.where('id', d.tramite.dependencia_origen_id).first() || {};
             d.tramite.person = await people.where('id', d.tramite.person_id).first() || {};
             d.tramite.files = await files.where('object_type', 'App/Models/Tramite').where('object_id', d.tramite.id).toArray() || [];
+            // validar configs
+            if (configs_keys.includes(d.status)) {
+                let current_config = configs.where('key', d.status).first() || {};
+                configs_index[d.status] = typeof configs_index[d.status] === 'number' ? configs_index[d.status] + 1 : 1;
+                let current_index = trackings.page * configs_index[d.status];
+                d.is_next = current_index <= current_config.value ? true : false;
+            } else {
+                d.is_next = true;
+            }
+            // response
             return d;
         });
         // response 
