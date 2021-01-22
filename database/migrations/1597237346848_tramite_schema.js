@@ -16,6 +16,7 @@ class TramiteSchema extends Schema {
       table.string('asunto').notNullable();
       table.text('observation');
       table.integer('dependencia_origen_id');
+      table.integer('tramite_parent_id');
       table.boolean('state').defaultTo(true);
       table.timestamps()
     })

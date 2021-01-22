@@ -16,6 +16,18 @@ class TimelineController {
         return entity;
     }
 
+    // obtener tramite hijos
+    _tramites = async (request, trackings) => {
+        let ids = collect(trackings.data).groupBy('tramite_id').keys().toArray();
+        let tramites = await Tramite.query()
+            .with('tramite_type')
+            .whereIn('id', ids)
+            .fetch();
+        // response
+        tramites = await tramites.toJSON();
+        return collect(tramites);
+    }
+
     // obtener dependencias
     _dependencias = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
@@ -77,12 +89,15 @@ class TimelineController {
         let tramite = await Tramite.query()
             .with('tramite_type')
             .where('slug', params.slug)
+            .whereNull('tramite_parent_id')
             .first();
         if (!tramite) throw new NotFoundModelException('El trámite');
         // obtener tracking
         let trackings = await Tracking.query()
-            .where('tramite_id', tramite.id)
-            .whereIn('status', ['REGISTRADO', 'DERIVADO', 'ACEPTADO', 'RECHAZADO', 'RESPONDIDO', 'ANULADO', 'FINALIZADO'])
+            .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
+            .where('tra.slug', tramite.slug)
+            .whereIn('trackings.status', ['REGISTRADO', 'DERIVADO', 'ACEPTADO', 'RECHAZADO', 'RESPONDIDO', 'ANULADO', 'FINALIZADO'])
+            .select('trackings.*')
             .paginate(page || 1, 20);
         trackings = await trackings.toJSON();
         // obtener dependencias
@@ -90,6 +105,7 @@ class TimelineController {
         let dependencias = await this._dependencias(request, tramite, trackings);
         let people = await this._people(request, tramite, trackings);
         let files = await this._files(request, tramite, trackings);
+        let tramites = await this._tramites(request, trackings);
         // configurar datos
         await trackings.data.map(tra => {
             tra.dependencia = dependencias.where('id', tra.dependencia_id).first() || {};
@@ -97,6 +113,9 @@ class TimelineController {
             tra.dependencia_destino = dependencias.where('id', tra.dependencia_destino_id).first() || {};
             tra.person = people.where('id', tra.person_id).first() || {};
             tra.files = files.where('object_type', 'App/Models/Tracking').where('object_id', tra.id).toArray() || [];
+            // agregar tramite al primer tracking
+            if (tra.first) tra.tramite = tramites.where('id', tra.tramite_id).first() || {};
+            // response
             return tra;
         });
         // trámite

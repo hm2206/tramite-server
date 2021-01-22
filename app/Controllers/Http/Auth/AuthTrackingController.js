@@ -28,8 +28,8 @@ class AuthTrackingController {
     // obtener remitentes
     _people = async (request, trackings) => {
         let db = collect(trackings.data);
-        let plucked = db.pluck('person_id');
-        let ids = collect([...plucked.keys().toArray(), ...plucked.values().toArray()]).toArray();
+        let values = db.pluck('person_id').toArray();
+        let ids = [...values, db.pluck('tramite_person_id').toArray()];
         let people = await request.api_authentication.get(`find_people?id[]=${ids.join('&id[]=')}`)
             .then(res => res.data)
             .catch(err => ([]));
@@ -56,8 +56,7 @@ class AuthTrackingController {
         let datos = collect(trackings.data);
         let keys = datos.pluck('status').toArray();
         let configs = await Config.query()
-            .where('variable', 'NEXT')
-            .whereIn('key', keys)
+            .whereIn('variable', ['NEXT', 'DAY_LIMIT'])
             .fetch();
         // obtener JSON
         configs = await configs.toJSON();
@@ -80,7 +79,7 @@ class AuthTrackingController {
                 build.with('tramite_type')
             })
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
-            .select('trackings.*')
+            .select('trackings.*', 'tra.person_id as tramite_person_id')
             .orderBy('trackings.created_at', status.includes('ENVIADO') || status.includes('PENDIENTE') ? 'ASC' : 'DESC')
             .where('visible', 1)
             .where('trackings.dependencia_id', dependencia.id)
@@ -121,15 +120,23 @@ class AuthTrackingController {
             d.tramite.dependencia_origen = await dependencias.where('id', d.tramite.dependencia_origen_id).first() || {};
             d.tramite.person = await people.where('id', d.tramite.person_id).first() || {};
             d.tramite.files = await files.where('object_type', 'App/Models/Tramite').where('object_id', d.tramite.id).toArray() || [];
-            // validar configs
+            d.is_next = true;
+            // validar seleccion
             if (configs_keys.includes(d.status)) {
                 let current_config = configs.where('key', d.status).first() || {};
                 configs_index[d.status] = typeof configs_index[d.status] === 'number' ? configs_index[d.status] + 1 : 1;
                 let current_index = trackings.page * configs_index[d.status];
                 d.is_next = current_index <= current_config.value ? true : false;
-            } else {
-                d.is_next = true;
             }
+            // validar limite de dia
+            let semaforos = await configs.where('variable', 'DAY_LIMIT').toArray();
+            await semaforos.map((s, indexS) => {
+                if (!d.semaforo && d.day <= s.value) {
+                    d.semaforo = s.key;
+                }
+                // validar el último
+                if (indexS == (semaforos.length - 1)) d.semaforo = s.key;
+            });
             // response
             return d;
         });

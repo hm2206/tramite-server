@@ -31,6 +31,7 @@ class TramiteController {
         if (!type) throw new ValidatorError([{ field: 'tramite_type_id', message: 'EL tipo de tramite es incorrecto' }]);
         // generar slug
         let slug = `${type.short_name}${uid(10)}`.toUpperCase().substr(0, 10);
+        let tramite_parent_id = null;
         // obtener al auth y dependencia
         let auth = request.$auth;
         let entity = request.$entity;
@@ -42,6 +43,13 @@ class TramiteController {
             .where('level', 'BOSS')
             .first();
         if (!role) throw new NotFoundModelException("Al jefe");
+        // validar tramite parent
+        if (request.input('tramite_id')) {
+            let tramite_parent = await Tramite.find(request.input('tramite_id'));
+            if (!tramite_parent) throw new NotFoundModelException("El trámite raíz");
+            tramite_parent_id = tramite_parent.id;
+            slug = tramite_parent.slug;
+        }
         // payload
         let payload = {
             entity_id: request.$entity.id,
@@ -52,7 +60,8 @@ class TramiteController {
             folio_count: request.input('folio_count'),
             observation: request.input('observation'),
             asunto: request.input('asunto'),
-            dependencia_origen_id: dependencia.id
+            dependencia_origen_id: dependencia.id,
+            tramite_parent_id
         }
         // guardar tramite
         let tramite = await Tramite.create(payload);

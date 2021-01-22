@@ -80,7 +80,7 @@ class NextController {
             .update({ current: 0 });
         // deshabilitar por status
         await Tracking.query()
-            .where('tramite_id', this.tracking.id)
+            .where('tramite_id', this.tracking.tramite_id)
             .where('current', 0)
             .whereIn('status', ['REGISTRADO', 'PENDIENTE', 'ENVIADO'])
             .update({ visible: 0 });
@@ -174,7 +174,6 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.id
         delete current_tracking.tramite;
-        delete current_tracking.day;
         current_tracking.created_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.updated_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.revisado = 1;
@@ -192,6 +191,7 @@ class NextController {
         payload_enviado.current = 1;
         payload_enviado.visible = 1;
         payload_enviado.status = 'ENVIADO';
+        delete payload_enviado.day;
         // validar tramite interno
         if (!self_dependencia) {
             let current_boss = await Role.query()
@@ -225,6 +225,7 @@ class NextController {
         payload_derivado.visible = 1;
         payload_derivado.current = 0;
         payload_derivado.status = this.status;
+        delete payload_derivado.day;
         // deshabilitar visibilidad
         await this._disableCurrent();
         // crear derivado
@@ -311,6 +312,7 @@ class NextController {
         payload_aceptado.current = 0;
         payload_aceptado.revisado = 1;
         payload_aceptado.status = this.status;
+        delete payload_aceptado.day;
         // obtener notificación
         let notificar = await Tracking.query()
             .where('dependencia_id', payload_aceptado.dependencia_id)
@@ -365,6 +367,7 @@ class NextController {
         payload_pendiente.current = 1;
         payload_pendiente.description = request.input('description');
         payload_pendiente.status = "PENDIENTE";
+        delete payload_pendiente.day;
         // geenrar aceptado
         let payload_rechazado = Object.assign({}, current_tracking);
         payload_rechazado.description = null;
@@ -372,6 +375,7 @@ class NextController {
         payload_rechazado.dependencia_destino_id = current_tracking.dependencia_id;
         payload_rechazado.current = 0;
         payload_rechazado.status = this.status;
+        delete payload_rechazado.day;
         // obtener notificación
         let notificar = await Tracking.query()
             .where('dependencia_id', payload_pendiente.dependencia_id)
@@ -409,7 +413,6 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.tramite;
         delete current_tracking.id;
-        delete current_tracking.day;
         // obtener oficina origen
         let oficina_origen = await Tracking.query()
             .where('tramite_id', this.tracking.tramite_id)
@@ -424,12 +427,14 @@ class NextController {
         payload_pendiente.description = request.input('description');
         payload_pendiente.current = 1;
         payload_pendiente.status = 'ENVIADO';
+        delete payload_pendiente.day;
         // generar respondido
         let payload_respondido = Object.assign({}, current_tracking);
         payload_respondido.dependencia_origen_id = this.dependencia.id;
         payload_respondido.dependencia_destino_id = payload_pendiente.dependencia_id;
         payload_respondido.user_id = this.auth.id;
         payload_respondido.status = this.status;
+        delete payload_respondido.day;
         // deshabilitar visibilidad
         await this._disableCurrent();
         // generar datos
