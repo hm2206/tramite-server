@@ -10,6 +10,7 @@ const File = use('App/Models/File');
 const { validateAll } = use('Validator');
 const CustomException = require('../../Exceptions/CustomException')
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException')
+const Env = use('Env');
 
 
 class FileController {
@@ -41,7 +42,7 @@ class FileController {
         let file = await Storage.saveFile(request, "files", {
             multifiles: true,
             required: true,
-            size: "6mb"
+            size: Env.get('DRIVE_SIZE', '6mb')
         }, Helpers, {
             path: `${object_type.split('/').pop()}/${uid(10)}`.toLowerCase(),
             options: {
@@ -116,7 +117,7 @@ class FileController {
         let current_file = await Storage.saveFile(request, "file", {
             multifiles: false,
             required: true,
-            size: "6mb"
+            size: Env.get('DRIVE_SIZE', '6mb')
         }, Helpers, {
             path: `${file.object_type.split('/').pop()}/${uid(10)}`.toLowerCase(),
             options: {
