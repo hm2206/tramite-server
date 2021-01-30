@@ -24,7 +24,7 @@ class NextController {
     actions = {
         REGISTRADO: ['ANULADO', 'DERIVADO'],
         PENDIENTE: ['DERIVADO', 'RESPONDIDO', 'FINALIZADO'],
-        ENVIADO: ['ACEPTADO', 'RECHAZADO']
+        RECIBIDO: ['ACEPTADO', 'RECHAZADO']
     };
     hidden = ['REGISTER'];
 
@@ -190,7 +190,7 @@ class NextController {
         payload_enviado.alert = 0;
         payload_enviado.current = 1;
         payload_enviado.visible = 1;
-        payload_enviado.status = 'ENVIADO';
+        payload_enviado.status = 'RECIBIDO';
         delete payload_enviado.day;
         // validar tramite interno
         if (!self_dependencia) {
@@ -206,7 +206,6 @@ class NextController {
             payload_enviado.user_verify_id = current_user.id;
             payload_enviado.modo = 'DEPENDENCIA';
             payload_derivado.person_id = current_user.person_id;
-            payload_enviado.person_id = current_user.person_id;
         } else {
             payload_enviado.user_verify_id = request.input('user_destino_id');
             if (payload_enviado.user_verify_id == this.auth.id) 
@@ -215,7 +214,6 @@ class NextController {
             let current_user = await this._getUser({ id: payload_enviado.user_verify_id, request });
             if (!Object.keys(current_user).length) throw new CustomException("El usuario no existe");
             payload_derivado.person_id = current_user.person_id;
-            payload_enviado.person_id = current_user.person_id;
         }
         // configurar derivado
         payload_derivado.dependencia_origen_id = current_tracking.dependencia_id;
@@ -426,7 +424,7 @@ class NextController {
         payload_pendiente.dependencia_origen_id = this.dependencia.id;
         payload_pendiente.description = request.input('description');
         payload_pendiente.current = 1;
-        payload_pendiente.status = 'ENVIADO';
+        payload_pendiente.status = 'RECIBIDO';
         delete payload_pendiente.day;
         // generar respondido
         let payload_respondido = Object.assign({}, current_tracking);
@@ -485,6 +483,15 @@ class NextController {
         await this._validateModo();
         // deshabilitar visibilidad
         await this._disableCurrent();
+        // obtener aceptado
+        let aceptado = await Tracking.query()
+            .where('tramite_id', payload.tramite_id)
+            .where('dependencia_destino_id', payload.dependencia_id)
+            .whereIn('status', ['ACEPTADO'])
+            .orderBy('id', 'DESC')
+            .first();
+        // validar person_id
+        payload.person_id = aceptado ? aceptado.person_id : payload.person_id;
         // crear anulado
         let finalizado = await Tracking.create(payload);
         // response

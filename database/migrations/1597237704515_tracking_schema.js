@@ -20,7 +20,7 @@ class TrackingSchema extends Schema {
       table.boolean('revisado').defaultTo(false).comment('Tracking que tiene permiso para salir de la dependencia');
       table.boolean('visible').defaultTo(true);
       table.enum('modo', ['YO', 'DEPENDENCIA']).defaultTo('YO');
-      table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'ENVIADO', 'RESPONDIDO', 'COPIA']).defaultTo('PENDIENTE');
+      table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA']).defaultTo('PENDIENTE');
       table.boolean('first').defaultTo(false);
       table.boolean('state').defaultTo(true);
       table.timestamps()

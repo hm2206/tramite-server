@@ -8,8 +8,9 @@ class AuthStatusController {
         let entity = request.$entity;
         let dependencia = request.$dependencia;
         let auth = request.$auth;
+        let modo = `${request.input('modo', 'YO')}`.toUpperCase();
         // permitidos
-        let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'ENVIADO', 'DERIVADO', 'ANULADO']);
+        let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'RECIBIDO', 'DERIVADO', 'ANULADO']);
         // select dinamico
         let select_status = [];
         allow_status.map(allow => {
@@ -18,10 +19,11 @@ class AuthStatusController {
                 .where('t.entity_id', entity.id)
                 .where('tra.dependencia_id', dependencia.id)
                 .where('tra.status', allow)
-                .where('tra.revisado', 0)
-                .where('tra.visible', 1)
-                .whereRaw(`IF(modo = 'YO', IF(tra.user_verify_id = ${auth.id}, 1, 0), 1)`)
+                .whereIn('tra.modo', modo == 'YO' ? ['YO', 'DEPENDENCIA'] : ['DEPENDENCIA'])
+                .where('tra.current', 1)
                 .select(DB.raw(`count(tra.status)`))
+            // validar yo
+            if (modo == 'YO') raw_status.where('tra.user_verify_id', auth.id);
             // add select
             select_status.push(`(${raw_status}) as ${allow}`);
         });
