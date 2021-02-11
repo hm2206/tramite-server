@@ -61,7 +61,8 @@ class TramiteController {
             observation: request.input('observation'),
             asunto: request.input('asunto'),
             dependencia_origen_id: dependencia.id,
-            tramite_parent_id
+            tramite_parent_id,
+            user_id: auth.id,
         }
         // guardar tramite
         let tramite = await Tramite.create(payload);

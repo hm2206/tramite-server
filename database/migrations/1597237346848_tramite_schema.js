@@ -9,7 +9,7 @@ class TramiteSchema extends Schema {
       table.increments()
       table.string('entity_id').notNullable();
       table.integer('person_id').notNullable();
-      table.string('slug').unique()
+      table.string('slug');
       table.string('document_number').notNullable();
       table.integer('tramite_type_id').notNullable();
       table.integer('folio_count').notNullable();
@@ -17,6 +17,7 @@ class TramiteSchema extends Schema {
       table.text('observation');
       table.integer('dependencia_origen_id');
       table.integer('tramite_parent_id');
+      table.integer('user_id');
       table.boolean('state').defaultTo(true);
       table.timestamps()
     })

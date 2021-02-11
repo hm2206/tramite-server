@@ -14,7 +14,7 @@ class TrackingSchema extends Schema {
       table.integer('dependencia_destino_id').notNullable();
       table.integer('user_id').comment('Usuario que realizó la acción');
       table.integer('user_verify_id').comment('Usuario que realizara la verificación del trámite').notNullable();
-      table.integer('person_id').notNullable('Remitente de la acción');
+      table.integer('person_id').notNullable();
       table.boolean('current').defaultTo(true).comment('Tracking actual');
       table.boolean('alert').defaultTo(false).comment('Tracking que há sido rechazado');
       table.boolean('revisado').defaultTo(false).comment('Tracking que tiene permiso para salir de la dependencia');
@@ -22,6 +22,7 @@ class TrackingSchema extends Schema {
       table.enum('modo', ['YO', 'DEPENDENCIA']).defaultTo('YO');
       table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA']).defaultTo('PENDIENTE');
       table.boolean('first').defaultTo(false);
+      table.timestamp('readed_at');
       table.boolean('state').defaultTo(true);
       table.timestamps()
     })

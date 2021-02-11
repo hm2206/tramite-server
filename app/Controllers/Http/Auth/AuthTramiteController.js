@@ -3,6 +3,7 @@
 const Tracking = use('App/Models/Tracking');
 const File = use('App/Models/File');
 const collect = require('collect.js');
+const moment = require('moment');
 const NotFoundModelException = require('../../../Exceptions/NotFoundModelException');
 const DB = use('Database');
 
@@ -28,6 +29,11 @@ class AuthTramiteController {
             .select('trackings.*')
             .first();
         if (!tracking) throw new NotFoundModelException("El trámite");
+        // marcar como leído
+        if (!tracking.readed_at) {
+            tracking.merge({ readed_at: moment().format('YYYY-MM-DD hh:mm:ss') });
+            tracking.save();
+        }
         // obtener tramite
         let tramite = await tracking.tramite().fetch();
         // obtener dependencias

@@ -87,14 +87,14 @@ class AuthTrackingController {
         // filtros
         if (modos.includes('YO')) trackings.where('trackings.user_verify_id', auth.id);
         if (status.length) trackings.whereIn('trackings.status', status);
-        if (query_search) trackings.joinLeft('files as f', 'f.object_id', 'tra.id')
+        if (query_search) trackings.leftJoin('files as f', 'f.object_id', 'tra.id')
             .where('f.object_type', 'App/Models/Tramite')
             .where(DB.raw(`(tra.slug like '%${query_search}%' OR tra.document_number like '%${query_search}%' OR f.name like '%${query_search}%')`))
             .groupBy('trackings.id', 'trackings.description', 'trackings.tramite_id', 'trackings.dependencia_id',
                 'trackings.dependencia_origen_id', 'trackings.dependencia_destino_id', 'trackings.user_id',
                 'trackings.user_verify_id', 'trackings.person_id', 'trackings.current', 'trackings.alert',
                 'trackings.revisado', 'trackings.modo', 'trackings.visible', 'trackings.status', 'trackings.first', 
-                'trackings.state'
+                'trackings.state', 'trackings.readed_at'
             )
         // paginación
         trackings = await trackings.paginate(page || 1, 20);

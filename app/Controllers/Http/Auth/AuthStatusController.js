@@ -20,7 +20,7 @@ class AuthStatusController {
                 .where('tra.dependencia_id', dependencia.id)
                 .where('tra.status', allow)
                 .whereIn('tra.modo', modo == 'YO' ? ['YO', 'DEPENDENCIA'] : ['DEPENDENCIA'])
-                .where('tra.current', 1)
+                .whereNull('tra.readed_at')
                 .select(DB.raw(`count(tra.status)`))
             // validar yo
             if (modo == 'YO') raw_status.where('tra.user_verify_id', auth.id);

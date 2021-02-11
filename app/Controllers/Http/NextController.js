@@ -1,8 +1,8 @@
 'use strict'
 
 const Tracking = use('App/Models/Tracking');
+const Tramite = use('App/Models/Tramite');
 const Role = use('App/Models/Role');
-const Helpers = use('Helpers');
 const { validateAll } = use('Validator');
 const { Storage, validation, ValidatorError } = require('validator-error-adonis');
 const CustomException = require('../../Exceptions/CustomException');
@@ -174,6 +174,7 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.id
         delete current_tracking.tramite;
+        delete current_tracking.readed_at;
         current_tracking.created_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.updated_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.revisado = 1;
@@ -260,6 +261,7 @@ class NextController {
         delete current_tracking.id;
         delete current_tracking.tramite;
         delete current_tracking.day;
+        delete current_tracking.readed_at;
         let payload = { ...current_tracking };
         payload.status = this.status;
         payload.user_id = this.auth.id;
@@ -291,6 +293,7 @@ class NextController {
         delete current_tracking.id;
         delete current_tracking.tramite;
         delete current_tracking.day;
+        delete current_tracking.readed_at;
         current_tracking.created_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.updated_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.user_id = this.auth.id;
@@ -311,6 +314,9 @@ class NextController {
         payload_aceptado.revisado = 1;
         payload_aceptado.status = this.status;
         delete payload_aceptado.day;
+        // obtener usuario actual
+        let current_user = await this._getUser({ id: current_tracking.user_verify_id, request });
+        payload_aceptado.person_id = current_user.person_id;
         // obtener notificación
         let notificar = await Tracking.query()
             .where('dependencia_id', payload_aceptado.dependencia_id)
@@ -323,6 +329,8 @@ class NextController {
         payload_aceptado.person_id = notificar.person_id;
         // deshabilitar cadena
         await this._disableCurrent();
+        // add dependencia destino
+        payload_aceptado.dependencia_destino_id = payload_pendiente.dependencia_id;
         // crear aceptado
         let aceptado = await Tracking.create(payload_aceptado);
         // crear pendiente
@@ -332,6 +340,9 @@ class NextController {
             .where('object_type', 'App/Models/Tracking')
             .where('object_id', this.tracking.id)
             .update({ object_id: pendiente.id });
+        // quitar current
+        this.tracking.merge({ current: 0, visible: 0 });
+        await this.tracking.save();
         // response
         this.tracking = pendiente;
         return pendiente;
@@ -350,6 +361,7 @@ class NextController {
         delete current_tracking.id;
         delete current_tracking.tramite;
         delete current_tracking.day;
+        delete current_tracking.readed_at;
         current_tracking.created_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.updated_at = moment().format('YYYY-MM-DD hh:mm:ss');
         current_tracking.user_id = this.auth.id;
@@ -386,6 +398,8 @@ class NextController {
         payload_pendiente.person_id = notificar.person_id;
         // deshabilitar cadena
         await this._disableCurrent();
+        // add dependencia_destino_id
+        payload_rechazado.dependencia_destino_id = payload_pendiente.dependencia_id;
         // crear aceptado
         let rechazado = await Tracking.create(payload_rechazado);
         // crear pendiente
@@ -411,6 +425,7 @@ class NextController {
         let current_tracking = await this.tracking.toJSON();
         delete current_tracking.tramite;
         delete current_tracking.id;
+        delete current_tracking.readed_at;
         // obtener oficina origen
         let oficina_origen = await Tracking.query()
             .where('tramite_id', this.tracking.tramite_id)
@@ -426,6 +441,7 @@ class NextController {
         payload_pendiente.current = 1;
         payload_pendiente.status = 'RECIBIDO';
         delete payload_pendiente.day;
+        delete payload_pendiente.readed_at;
         // generar respondido
         let payload_respondido = Object.assign({}, current_tracking);
         payload_respondido.dependencia_origen_id = this.dependencia.id;
@@ -433,6 +449,7 @@ class NextController {
         payload_respondido.user_id = this.auth.id;
         payload_respondido.status = this.status;
         delete payload_respondido.day;
+        delete payload_respondido.readed_at;
         // deshabilitar visibilidad
         await this._disableCurrent();
         // generar datos
@@ -472,6 +489,7 @@ class NextController {
         delete current_tracking.id;
         delete current_tracking.tramite;
         delete current_tracking.day;
+        delete current_tracking.readed_at;
         let payload = { ...current_tracking };
         payload.status = this.status;
         payload.user_id = this.auth.id;
@@ -494,6 +512,10 @@ class NextController {
         payload.person_id = aceptado ? aceptado.person_id : payload.person_id;
         // crear anulado
         let finalizado = await Tracking.create(payload);
+        // cambiar estado
+        await Tramite.query()
+            .where('id', finalizado.tramite_id)
+            .update({ state : 0 });
         // response
         this.tracking = finalizado;
         return finalizado;
