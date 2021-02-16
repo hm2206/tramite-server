@@ -52,6 +52,15 @@ class TrackingController {
         tracking.files = await files.where('object_type', 'App/Models/Tracking').where('object_id', tracking.id).toArray();
         tracking.tramite.files = await files.where('object_type', 'App/Models/Tramite').where('object_id', tracking.tramite_id).toArray();
         tracking.tramite.code_qr = code_qr;
+        // obtener files antiguos
+        let old_files = await File.query()
+            .join('tramites as tra', 'tra.id', 'files.object_id')
+            .where('files.object_type', 'App/Models/Tramite')
+            .where('tra.slug', tramite.slug)
+            .whereNotIn('tra.id', [tramite.id])
+            .select('files.*')
+            .fetch();
+        console.log(old_files);
         // response 
         return {
             success: true,

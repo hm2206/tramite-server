@@ -282,10 +282,6 @@ class NextController {
 
     // aceptar
     _aceptado = async ({ params, request }) => {
-        // validar
-        await validation(validateAll, request.all(), {
-            description: 'required|max:255'
-        });
         // validar modo
         await this._validateModo();
         // json tracking
@@ -308,7 +304,7 @@ class NextController {
         payload_pendiente.status = "PENDIENTE";
         // geenrar aceptado
         let payload_aceptado = Object.assign({}, current_tracking);
-        payload_aceptado.description = request.input('description');
+        payload_aceptado.description = request.input('description', "");
         payload_aceptado.dependencia_id = current_tracking.dependencia_origen_id;
         payload_aceptado.current = 0;
         payload_aceptado.revisado = 1;
@@ -350,10 +346,6 @@ class NextController {
 
     // rechazar
     _rechazado = async ({ params, request }) => {
-        // validar
-        await validation(validateAll, request.all(), {
-            description: 'required|max:255'
-        });
         // validar modo
         await this._validateModo();
         // json tracking
