@@ -12,7 +12,12 @@ class AuthTrackingController {
     _dependencias = async (request, trackings) => {
         let db = collect(trackings.data);
         let plucked = db.pluck('dependencia_origen_id', 'dependencia_destino_id');
-        let ids = collect([...plucked.keys().toArray(), ...plucked.values().toArray()]).toArray();
+        let pluckedTramite = db.pluck('tramite.dependencia_origen_id');
+        let ids = collect([
+            ...plucked.keys().toArray(), 
+            ...plucked.values().toArray(),
+            ...pluckedTramite.toArray()
+        ]).toArray();
         // obtener dependencias
         let { dependencia } = await request.api_authentication.get(`dependencia?ids[]=${ids.join('&ids[]=')}`)
             .then(res => res.data)
