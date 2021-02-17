@@ -95,6 +95,12 @@
     "description": "Obtener los status de los trámites que te pertenecen",
     "action_type": "VIEW"
   },
+  "Auth/AuthTramiteController.index": {
+    "name": "Auth/AuthTramiteController.index",
+    "url": "api/auth/tramite",
+    "description": "Listar tramites por dependencia y otros filtros",
+    "action_type": "VIEW"
+  },
   "Auth/AuthTramiteController.show": {
     "name": "Auth/AuthTramiteController.show",
     "url": "api/auth/tramite/:id/tracking",

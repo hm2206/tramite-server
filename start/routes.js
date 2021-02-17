@@ -31,6 +31,7 @@ Route("get", "TimelineController.handle");
 
 // Auth
 Route("get", "Auth/AuthRoleController.handle").middleware(['jwt', 'entityId', 'dependenciaId']);
+Route("get", "Auth/AuthTramiteController.index").middleware(['jwt', 'entityId', 'dependenciaId']);
 Route("get", "Auth/AuthTramiteController.show").middleware(['jwt', 'entityId', 'dependenciaId']);
 Route("get", "Auth/AuthTrackingController.handle").middleware(['jwt', 'entityId', 'dependenciaId']);
 Route("get", "Auth/AuthStatusController.handle").middleware(['jwt', 'entityId', 'dependenciaId']);

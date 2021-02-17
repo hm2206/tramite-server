@@ -11,6 +11,14 @@ class Tramite extends Model {
         super.boot();
         this.addHook('afterDelete', 'TramiteHook.deleteChildren');
     }
+
+    static get computed () {
+        return ['link', 'code_qr'];
+    }
+
+    getLink = () => {
+        return `${Env.get('CLIENT_TRAMITE')}?slug=${this.slug}`;
+    }
     
     // functiones
     funcCodeQr = async () => {
