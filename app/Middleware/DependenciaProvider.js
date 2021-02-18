@@ -19,12 +19,22 @@ class DependenciaProvider {
       // get dependencia
       let { success, message, dependencia } = await request.api_authentication.get(`auth/dependencia/${request.$entity.id}/${dependenciaId}`)
         .then(res => res.data)
-        .catch(err => ({
-          success: false,
-          status: err.status || 301,
-          code: err.code || 'ERR_NOT_FOUND_ENTITY',
-          message: err.message
-        }));
+        .catch(err => {
+          let { data } = err.response;
+          let { message, code, status } = err;
+          if (typeof data == 'object') {
+            message = data.message;
+            code = data.code
+            status = data.status;
+          }
+          // response
+          return {
+            success: false,
+            status: status || 501,
+            code: code || 'ERR_DEPENDENCIA',
+            message: message || err.message
+          }
+        });
       // validar dependecia
       if (!success) throw new Error(message);
       // add depedencia at ctx

@@ -13,7 +13,7 @@ class Tramite extends Model {
     }
 
     static get computed () {
-        return ['link', 'code_qr'];
+        return ['link'];
     }
 
     getLink = () => {

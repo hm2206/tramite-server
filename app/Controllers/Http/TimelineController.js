@@ -16,6 +16,26 @@ class TimelineController {
         return entity;
     }
 
+    // obtener sub_trackings
+    _settingTracking = async ({ data = [] }, tramites = [], dependencias = [], people = []) => {
+        return await data.map(tra => {
+            // agregar tramite al primer tracking
+            if (tra.first) tra.tramite = tramites.where('id', tra.tramite_id).first() || {};
+            // agregar sub tracking
+            if (!tra.first && tra.tracking) {
+                tra.dependencia = dependencias.where('id', tra.tracking.dependencia_id).first() || {};
+                tra.person = people.where('id', tra.tracking.person_id).first() || {};
+                // delete tracking
+                delete tra.tracking;
+            } else {
+                tra.dependencia = dependencias.where('id', tra.dependencia_id).first() || {};
+                tra.person = people.where('id', tra.person_id).first() || {};
+            }
+            // response
+            return tra;
+        });
+    }
+
     // obtener tramite hijos
     _tramites = async (request, trackings) => {
         let ids = collect(trackings.data).groupBy('tramite_id').keys().toArray();
@@ -31,16 +51,13 @@ class TimelineController {
     // obtener dependencias
     _dependencias = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
-        let dependencia_origen_id = db.pluck('dependencia_origen_id').toArray();
-        let dependencia_destino_id = db.pluck('dependencia_destino_id').toArray();
-        let tramite_dependencia_id = db.pluck('tramite_dependencia_id').toArray();
-        let ids = collect([
-            ...dependencia_origen_id,
-            ...dependencia_destino_id,
-            ...tramite_dependencia_id
-        ]).toArray();
+        let dependenciaIds = [
+            ...db.pluck('dependencia_id').toArray(),
+            tramite.dependencia_origen_id,
+            ...db.pluck('tracking.dependencia_id').toArray(),
+        ]
         // obtener dependencias
-        let { dependencia } = await request.api_authentication.get(`dependencia?ids[]=${ids.join('&ids[]=')}`)
+        let { dependencia } = await request.api_authentication.get(`dependencia?ids[]=${dependenciaIds.join('&ids[]=')}`)
             .then(res => res.data)
             .catch(err => ({
                 success: false,
@@ -96,10 +113,11 @@ class TimelineController {
         if (!tramite) throw new NotFoundModelException('El trámite');
         // obtener tracking
         let trackings = await Tracking.query()
+            .with('tracking')
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .where('tra.slug', tramite.slug)
             .whereIn('trackings.status', ['REGISTRADO', 'DERIVADO', 'ACEPTADO', 'RECHAZADO', 'RESPONDIDO', 'ANULADO', 'FINALIZADO'])
-            .select('trackings.*', 'tra.dependencia_origen_id as tramite_dependencia_id', 'tra.person_id as tramite_person_id')
+            .select('trackings.*')
             .paginate(page || 1, 20);
         trackings = await trackings.toJSON();
         // obtener dependencias
@@ -115,18 +133,8 @@ class TimelineController {
             t.files = files.where('object_type', 'App/Models/Tramite').where('object_id', t.id).toArray() || [];
             return t;
         })
-        // configurar datos
-        await trackings.data.map(tra => {
-            tra.dependencia = dependencias.where('id', tra.dependencia_id).first() || {};
-            tra.dependencia_origen = dependencias.where('id', tra.dependencia_origen_id).first() || {};
-            tra.dependencia_destino = dependencias.where('id', tra.dependencia_destino_id).first() || {};
-            tra.person = people.where('id', tra.person_id).first() || {};
-            tra.files = files.where('object_type', 'App/Models/Tracking').where('object_id', tra.id).toArray() || [];
-            // agregar tramite al primer tracking
-            if (tra.first) tra.tramite = tramites.where('id', tra.tramite_id).first() || {};
-            // response
-            return tra;
-        });
+        // configurar tracking
+        trackings.data = await this._settingTracking(trackings, tramites, dependencias, people);
         // trámite
         tramite.entity = entity;
         tramite.person = people.where('id', tramite.person_id).first() || {};
