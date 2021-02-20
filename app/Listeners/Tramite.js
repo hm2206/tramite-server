@@ -77,7 +77,8 @@ Tramite.tracking = async (request, tramite) => {
         modo: self_remitente ? 'YO' : 'DEPENDENCIA',
         first: 1,
         tracking_id,
-        next: tramite.tramite_parent_id ? next : ''
+        next: tramite.tramite_parent_id ? next : '',
+        readed_at: null
     });
     // validar next
     if (next) {

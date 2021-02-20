@@ -206,7 +206,8 @@ class NextController {
             visible: 1,
             current: 1,
             first: 0,
-            status: 'RECIBIDO'
+            status: 'RECIBIDO',
+            readed_at: null
         }
         // validar tramite interno
         if (!self_dependencia) {
@@ -257,7 +258,8 @@ class NextController {
             current: 0,
             first: 0,
             modo: this.tracking.modo,
-            status: 'ANULADO'
+            status: 'ANULADO',
+            readed_at: null
         };
         // verificar modo 
         await this._validateModo();
@@ -293,7 +295,8 @@ class NextController {
             current: 0,
             first: 0,
             modo: this.tracking.modo,
-            status: 'ACEPTADO'
+            status: 'ACEPTADO',
+            readed_at: null
         };
         // crear aceptado
         let aceptado = await Tracking.create(payload_aceptado);
@@ -339,7 +342,8 @@ class NextController {
             alert: 1,
             modo: this.tracking.modo,
             next: origen.next,
-            status: 'PENDIENTE'
+            status: 'PENDIENTE',
+            readed_at: null
         };
         // crear pendiente
         let pendiente = await Tracking.create(payload_pendiente);
@@ -384,7 +388,8 @@ class NextController {
             current: 1,
             first: 0,
             modo: this.tracking.dependencia_id != origen.dependencia_id ? 'DEPENDENCIA' : 'YO',
-            status: 'RECIBIDO'
+            status: 'RECIBIDO',
+            readed_at: null
         }
         // generar respondido 
         let payload_respondido = Object.assign({}, payload_recibido);
@@ -421,7 +426,8 @@ class NextController {
             visible: 1,
             current: 0,
             modo: this.tracking.modo,
-            status: 'FINALIZADO'
+            status: 'FINALIZADO',
+            readed_at: null
         }
         // verificar modo 
         await this._validateModo();
