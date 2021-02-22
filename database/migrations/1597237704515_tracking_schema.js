@@ -22,7 +22,7 @@ class TrackingSchema extends Schema {
       table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA']).defaultTo('PENDIENTE');
       table.string("next");
       table.boolean('state').defaultTo(true);
-      table.timestamp('readed_at').nullable();
+      table.datetime('readed_at').nullable();
       table.timestamps()
     })
   }

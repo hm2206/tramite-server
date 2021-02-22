@@ -16,12 +16,14 @@ class AuthTramiteController {
         // configs
         let dependencia = request.$dependencia;
         let entity = request.$entity;
+        let auth = request.$auth;
         // filtros
         let { query_search, page, tramite_type_id } = request.all();
         let tramites = Tramite.query()
             .with('tramite_type')
             .where('tramites.entity_id', entity.id)
-            .where('tramites.dependencia_origen_id', dependencia.id);
+            .where('tramites.dependencia_origen_id', dependencia.id)
+            .where('tramites.person_id', auth.person_id);
         // filtrar por query search
         if (query_search) tramites.leftJoin('files as f', 'f.object_id', 'tramites.id')
             .where('f.object_type', 'App/Models/Tramite')
