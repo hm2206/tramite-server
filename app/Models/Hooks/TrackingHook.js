@@ -12,17 +12,19 @@ TrackingHook.formatter = async (tracking) => {
 TrackingHook.createVerify = async (tracking) => {
     // verificar revisado
     let allows = ['REGISTRADO', 'PENDIENTE'];
-    let revisado = tracking.revisado;
-    if (!revisado) tracking.user_id == tracking.user_verify_id ? 1 : 0;
-    // crear usuario que realiza la revisión del tracking
-    await Verify.create({
-        tracking_id: tracking.id,
-        user_id: tracking.user_verify_id,
-        date_verify: revisado ? moment().format('YYYY-MM-DD hh:mm:ss') : null
-    });
-    // actualizar revisión
-    tracking.revisado = revisado;
-    await tracking.save();
+    if (allows.includes(tracking.status)) {
+        let revisado = tracking.revisado;
+        if (!revisado) tracking.user_id == tracking.user_verify_id ? 1 : 0;
+        // crear usuario que realiza la revisión del tracking
+        await Verify.create({
+            tracking_id: tracking.id,
+            user_id: tracking.user_verify_id,
+            date_verify: revisado ? moment().format('YYYY-MM-DD hh:mm:ss') : null
+        });
+        // actualizar revisión
+        tracking.revisado = revisado;
+        await tracking.save();
+    }
 }
 
 TrackingHook.deleteVerify = async (tracking) => {

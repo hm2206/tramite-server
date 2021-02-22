@@ -9,12 +9,14 @@ const CustomException = require('../../Exceptions/CustomException');
 const FileController = require('./FileController');
 const moment = require('moment');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
+const { collect } = require('collect.js');
 const File = use('App/Models/File');
 const DB = use('Database');
 
 class NextController {
 
     status = "";
+    multiple = [];
     role = null;
     boss = null;
     entity = {};
@@ -161,6 +163,7 @@ class NextController {
         this.entity = request.$entity;
         this.dependencia = request.$dependencia;
         this.auth = request.$auth;
+        this.multiple = request.input('multiple') ? JSON.parse(request.input('multiple')) : [];
         // obtener tracking
         await this._getTracking({ params, request });
         await this._validateAction(request.input('status'));
@@ -239,6 +242,8 @@ class NextController {
         let derivado = await Tracking.create(payload_derivado);
         // deshabilitar tracking actual
         this._disableTrackingCurrent();
+        // generar copia
+        await this._multiple({ dependencia_id: request.input('dependencia_detino'), tracking_id: derivado.id });
         // config tracking
         return derivado;
     }
@@ -441,6 +446,48 @@ class NextController {
             .update({ state : 0 });
         // response
         return finalizado;
+    }
+
+    // multiple
+    _multiple = async ({ dependencia_id = '', tracking_id }) => {
+        // validar permitidos
+        let allow = ['DERIVADO'];
+        let action = ['DERIVADO'];
+        if (!this.multiple.length) return false;
+        if (!allow.includes(this.status)) return false;
+        this.multiple = collect(this.multiple || []);
+        let ids = this.multiple.pluck('id').toArray();
+        let roles = Role.query()
+            .where('entity_id', this.entity.id);
+        // filtrar dependencia
+        if (dependencia_id) roles.whereNotIn('dependencia_id', [dependencia_id])
+        // obtener datos
+        roles = await roles.whereIn('dependencia_id', ids)
+            .where('level', 'BOSS')
+            .fetch();
+        roles = collect(await roles.toJSON());
+        // datos reales
+        let payload = collect([]);
+        // filtrar
+        await this.multiple.map(async m => {
+            let exists = await roles.where('dependencia_id', parseInt(m.id)).first();
+            if (exists) payload.push({
+                tramite_id: this.tracking.tramite_id,
+                dependencia_id: exists.dependencia_id,
+                person_id: exists.person_id,
+                user_verify_id: exists.user_id,
+                user_id: this.auth.id,
+                tracking_id,
+                current: 0,
+                visible: 1,
+                revisado: 1,
+                first: 0,
+                modo: 'DEPENDENCIA',
+                status: 'COPIA'
+            });
+        });
+        // generar copia
+        await Tracking.createMany(payload.toArray());
     }
 }
 
