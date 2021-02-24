@@ -21,6 +21,7 @@ class TrackingSchema extends Schema {
       table.enum('modo', ['YO', 'DEPENDENCIA']).defaultTo('YO');
       table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA']).defaultTo('PENDIENTE');
       table.string("next");
+      table.boolean("multiple").defaultTo(false);
       table.boolean('state').defaultTo(true);
       table.datetime('readed_at').nullable();
       table.timestamps()

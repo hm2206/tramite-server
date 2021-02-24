@@ -243,7 +243,7 @@ class NextController {
         // deshabilitar tracking actual
         this._disableTrackingCurrent();
         // generar copia
-        await this._multiple({ dependencia_id: request.input('dependencia_detino'), tracking_id: derivado.id });
+        await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
         // config tracking
         return derivado;
     }
@@ -449,7 +449,7 @@ class NextController {
     }
 
     // multiple
-    _multiple = async ({ dependencia_id = '', tracking_id }) => {
+    _multiple = async ({ dependencia_id = '', current_tracking, status_action }) => {
         // validar permitidos
         let allow = ['DERIVADO'];
         let action = ['DERIVADO'];
@@ -471,23 +471,29 @@ class NextController {
         // filtrar
         await this.multiple.map(async m => {
             let exists = await roles.where('dependencia_id', parseInt(m.id)).first();
-            if (exists) payload.push({
-                tramite_id: this.tracking.tramite_id,
-                dependencia_id: exists.dependencia_id,
-                person_id: exists.person_id,
-                user_verify_id: exists.user_id,
-                user_id: this.auth.id,
-                tracking_id,
-                current: 0,
-                visible: 1,
-                revisado: 1,
-                first: 0,
-                modo: 'DEPENDENCIA',
-                status: 'COPIA'
-            });
+            if (exists) {
+                // recibido
+                payload.push({
+                    tramite_id: this.tracking.tramite_id,
+                    dependencia_id: exists.dependencia_id,
+                    person_id: exists.person_id,
+                    user_verify_id: exists.user_id,
+                    user_id: this.auth.id,
+                    tracking_id: current_tracking.id,
+                    current: m.action ? 1 : 0,
+                    visible: 1,
+                    revisado: 1,
+                    first: 0,
+                    modo: 'DEPENDENCIA',
+                    status: m.action ? 'RECIBIDO' : 'COPIA'
+                });
+            }
         });
         // generar copia
-        await Tracking.createMany(payload.toArray());
+        let count_multiple = await Tracking.createMany(payload.toArray());
+        // activar modo multiple
+        current_tracking.merge({ multiple: 1 });
+        await current_tracking.save();
     }
 }
 

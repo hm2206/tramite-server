@@ -10,7 +10,7 @@ class AuthStatusController {
         let auth = request.$auth;
         let modo = `${request.input('modo', 'YO')}`.toUpperCase();
         // permitidos
-        let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'RECIBIDO', 'DERIVADO', 'ANULADO']);
+        let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA', 'DERIVADO', 'ANULADO']);
         // select dinamico
         let select_status = [];
         allow_status.map(allow => {

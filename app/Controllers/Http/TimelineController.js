@@ -72,10 +72,11 @@ class TimelineController {
     _people = async (request, tramite, trackings) => {
         let db = collect(trackings.data);
         let person_id = db.pluck('person_id').toArray();
-        let tramite_person_id = db.pluck('tramite_person_id').toArray();
+        let tracking_person_id = db.pluck('tracking.person_id');
         let ids = collect([
+            tramite.person_id,
+            ...tracking_person_id,
             ...person_id,
-            ...tramite_person_id
         ]).toArray();
         let people = await request.api_authentication.get(`find_people?id[]=${ids.join('&id[]=')}`)
             .then(res => res.data)
