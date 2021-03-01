@@ -53,13 +53,13 @@ class NextController {
 
     // obtener user
     _getUser = async ({ id , request }) => {
-        let user = await request.api_authentication.get(`user/${id}`)
+        let response = await request.api_authentication.get(`user/${id}`)
             .then(res => res.data)
-            .catch(err => ({}));
+            .catch(err => ({ success: false, user: {} }));
         // validar usuario
-        if (!Object.keys(user).length) throw new CustomException("El usuario no existe!");
+        if (!response.success) throw new CustomException("El usuario no existe!");
         // response
-        return user;
+        return response.user;
     }
     
     // guardar datos
