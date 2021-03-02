@@ -11,6 +11,7 @@ Route("get", "TramiteTypeController.index");
 
 // Tracking
 Route("get", "TrackingController.show");
+Route("get", "TrackingController.multiple");
 
 // Files
 Route("get", "FileController.handle", false);

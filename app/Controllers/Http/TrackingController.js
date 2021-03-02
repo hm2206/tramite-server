@@ -3,6 +3,7 @@
 const Tracking = use('App/Models/Tracking');
 const File = use('App/Models/File');
 const collect = require('collect.js');
+const NotFoundModelException = require('../../Exceptions/NotFoundModelException')
 
 class TrackingController {
 
@@ -60,13 +61,67 @@ class TrackingController {
             .whereNotIn('tra.id', [tramite.id])
             .select('files.*')
             .fetch();
-        console.log(old_files);
         // response 
         return {
             success: true,
             status: 201,
             tracking
         }
+    }
+
+    // obtener multiple
+    multiple = async ({ params, request }) => {
+        let { page } = request.all();
+        let tracking = await Tracking.query()
+            .where('multiple', 1)
+            .where('id', params.id)
+            .first();
+        // validar tracking
+        if (!tracking) throw new NotFoundModelException("El seguimiento");
+        // obtener seguimiento multiple
+        let multiples = await Tracking.query()
+            .where('tracking_id', tracking.id)
+            .paginate(page || 1, 20);
+        // parse json
+        multiples = await multiples.toJSON();
+        // add collect
+        let collection = collect(multiples.data);
+        // obtener dependencias
+        let plucked = await collection.pluck('dependencia_id').toArray();
+        let dependencias = await this._getDependencias(request, [...plucked, tracking.dependencia_id]);
+        // obtener people
+        let pluckedPerson = await collection.pluck('person_id').toArray();
+        let people = await this._getPerson(request, pluckedPerson);
+        // setting 
+        multiples.data.map(d => {
+            d.dependencia = dependencias.where(`id`, d.dependencia_id).first() || {};
+            d.person = people.where('id', d.person_id).first() || {};
+            return d;
+        });
+        // response
+        return { 
+            success: true,
+            status: 201,
+            tracking,
+            multiples
+        }
+    }
+
+    // obtener dependencias
+    _getDependencias = async (request, ids = []) => {
+        let { success, dependencia } = await request.api_authentication.get(`dependencia?ids[]=${ids.join('&ids[]=')}`)
+        .then(res => res.data)
+        .catch(err => ({ success: false, dependencia: {} }));
+        if (!success) return collect([]);
+        return collect(dependencia.data || []);
+    }
+
+    // obtener persona
+    _getPerson = async (request, ids = []) => {
+        let response = await request.api_authentication.get(`find_people?id[]=${ids.join('&id[]=')}`)
+        .then(res => res.data)
+        .catch(err => ([]));
+        return collect(response);
     }
 
 }

@@ -23,6 +23,12 @@
     "description": "Obtener tracking por identificador",
     "action_type": "VIEW"
   },
+  "TrackingController.multiple": {
+    "name": "TrackingController.multiple",
+    "url": "api/tracking/:id/multiple",
+    "description": "Obtener multiples del tracking por identificador",
+    "action_type": "VIEW"
+  },
   "VerifyController.handle": {
     "name": "VerifyController.handle",
     "url": "api/tracking/:id/verify",
