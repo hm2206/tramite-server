@@ -8,6 +8,10 @@ Route("post", "TramiteController.store").middleware(['jwt', 'entityId', 'depende
 
 // Tipo de trámite
 Route("get", "TramiteTypeController.index");
+Route("post", "TramiteTypeController.store").middleware(['jwt']);
+Route("get", "TramiteTypeController.show");
+Route("put", "TramiteTypeController.update").middleware(['jwt']);
+Route("put", "TramiteTypeController.state").middleware(['jwt']);
 
 // Tracking
 Route("get", "TrackingController.show");

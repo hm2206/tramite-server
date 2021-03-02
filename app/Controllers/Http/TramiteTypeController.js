@@ -1,7 +1,7 @@
 'use strict'
 
 const TramiteType = use('App/Models/TramiteType');
-const { validate } = use('Validator');
+const { validate, validateAll } = use('Validator');
 const { validation,ValidatorError } = require('validator-error-adonis');
 
 class TramiteTypeController {
@@ -26,14 +26,14 @@ class TramiteTypeController {
     }
 
     store = async ({ request }) => {
-        await validation(validate, request.all(), {
+        await validation(validateAll, request.all(), {
             short_name: "required|unique:tramite_types",
             description: "required|max:100"
         });
         // crear
         await TramiteType.create({ 
-            short_name: `${request.input('short_name')}`.toUpperCase(),
-            description: `${request.input('description')}`.toUpperCase()
+            short_name: `${request.input('short_name')}`,
+            description: `${request.input('description')}`
         });
         // response
         return {
@@ -56,7 +56,7 @@ class TramiteTypeController {
     }
 
     update = async ({ params, request }) => {
-        await validation(validate, request.all(), {
+        await validation(validateAll, request.all(), {
             short_name: 'required|max:3',
             description: 'required|max:100'
         });
@@ -67,8 +67,8 @@ class TramiteTypeController {
         // get tramite_types
         let tramite = await TramiteType.findOrFail(params.id);
         // update 
-        tramite.short_name = `${request.input('short_name')}`.toUpperCase();
-        tramite.description = `${request.input('description')}`.toUpperCase();
+        tramite.short_name = `${request.input('short_name')}`;
+        tramite.description = `${request.input('description')}`;
         await tramite.save();
         // response 
         return {

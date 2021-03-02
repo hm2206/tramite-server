@@ -17,6 +17,30 @@
     "description": "Listar Tipo de trámite",
     "action_type": "VIEW"
   },
+  "TramiteTypeController.store": {
+    "name": "TramiteTypeController.store",
+    "url": "api/tramite_type",
+    "description": "Crear Tipo de trámite",
+    "action_type": "CREATE"
+  },
+  "TramiteTypeController.show": {
+    "name": "TramiteTypeController.show",
+    "url": "api/tramite_type/:id",
+    "description": "Obtener Tipo de trámite",
+    "action_type": "VIEW"
+  },
+  "TramiteTypeController.state": {
+    "name": "TramiteTypeController.state",
+    "url": "api/tramite_type/:id/state",
+    "description": "Cambiar estado del Tipo de trámite",
+    "action_type": "UPDATE"
+  },
+  "TramiteTypeController.update": {
+    "name": "TramiteTypeController.update",
+    "url": "api/tramite_type/:id",
+    "description": "Actualizar Tipo de trámite",
+    "action_type": "UPDATE"
+  },
   "TrackingController.show": {
     "name": "TrackingController.show",
     "url": "api/tracking/:id",
