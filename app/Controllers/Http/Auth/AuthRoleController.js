@@ -3,6 +3,16 @@
 const Role = use('App/Models/Role');
 
 class AuthRoleController {
+    
+    _getUser = async (request, id) => {
+        let { success, user } = await request.api_authentication.get(`user/${id}`)
+        .then(res => res.data)
+        .catch(err => {
+            console.log(err);
+            return ({ success: false, user: {}})
+        });
+        return user;
+    }
 
     handle = async ({ request }) => {
         let dependencia = request.$dependencia;
@@ -20,12 +30,7 @@ class AuthRoleController {
             .where('entity_id', entity.id)
             .where('level', 'BOSS')
             .first();
-        if (boss) {
-            let user = await request.api_authentication.get(`user/${boss.user_id}`)
-                .then(res => res.data)
-                .catch(err => ({}));
-            boss.user = user;
-        }
+        if (boss) boss.user = await this._getUser(request, boss.user_id)
         // response
         return { 
             success: true,
