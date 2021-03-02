@@ -20,7 +20,6 @@ Tramite.createTramite = async (request, tramite, person, creado, dependencia) =>
     });
 }
 
-
 Tramite.tracking = async (request, tramite) => {
     let auth = request.$auth;
     let dependencia = request.$dependencia;
@@ -50,18 +49,6 @@ Tramite.tracking = async (request, tramite) => {
             .first();
         if (!before_tracking) throw new CustomException(`No se encontró un seguimiento activo del trámite raíz!`);
         tracking_id = before_tracking.tracking_id || before_tracking.id;
-        // finalizar trámite anterior
-        before_tracking.merge({ 
-            current: 0, 
-            visible: 0
-        });
-        // obtener tramite
-        let before_tramite = await before_tracking.tramite().fetch();
-        console.log(before_tramite);
-        before_tramite.merge({ state: 0 });
-        await before_tramite.save();
-        // actualizar
-        await before_tracking.save();
     }
     // crear tracking
     await Tracking.create({
@@ -80,11 +67,4 @@ Tramite.tracking = async (request, tramite) => {
         next: tramite.tramite_parent_id ? next : '',
         readed_at: null
     });
-    // validar next
-    if (next) {
-        // deshabilitar tramite
-        await Tramite.query()
-            .where('id', tramite.tramite_parent_id)
-            .update({ state : 1 });
-    }
 }
