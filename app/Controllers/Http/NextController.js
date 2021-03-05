@@ -10,8 +10,7 @@ const FileController = require('./FileController');
 const moment = require('moment');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
 const { collect } = require('collect.js');
-const File = use('App/Models/File');
-const Info = use('App/Models/info');
+const Info = use('App/Models/Info');
 const DB = use('Database');
 
 class NextController {
