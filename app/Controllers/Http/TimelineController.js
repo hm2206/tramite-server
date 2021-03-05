@@ -4,6 +4,7 @@ const collect = require('collect.js');
 const File = use('App/Models/File');
 const Tramite = use('App/Models/Tramite');
 const Tracking = use('App/Models/Tracking');
+const Info = use('App/Models/Info');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException')
 
 class TimelineController {
@@ -17,10 +18,11 @@ class TimelineController {
     }
 
     // obtener sub_trackings
-    _settingTracking = async ({ data = [] }, tramites = [], dependencias = [], people = []) => {
+    _settingTracking = async ({ data = [] }, tramites = [], dependencias = [], people = [], infos = []) => {
         return await data.map(tra => {
             // agregar tramite al primer tracking
             if (tra.first) tra.tramite = tramites.where('id', tra.tramite_id).first() || {};
+            tra.info = infos.where('id', tra.info_id).first() || {};
             // agregar sub tracking
             if (!tra.first && tra.tracking) {
                 tra.dependencia = dependencias.where('id', tra.tracking.dependencia_id).first() || {};
@@ -34,6 +36,17 @@ class TimelineController {
             // response
             return tra;
         });
+    }
+
+    // obtener infos
+    _infos = async (ids = []) => {
+        let infos = await Info.query()
+            .with('files', (build) => build.where('object_type', 'App/Models/Info'))
+            .join('trackings as tra', 'tra.info_id', 'infos.id')
+            .whereIn('tra.id', ids)
+            .select('infos.*')
+            .fetch();
+        return collect(await infos.toJSON());
     }
 
     // obtener tramite hijos
@@ -127,6 +140,9 @@ class TimelineController {
         let dependencias = await this._dependencias(request, tramite, trackings);
         let people = await this._people(request, tramite, trackings);
         let files = await this._files(request, tramite, trackings);
+        // obtener infos
+        let db = collect(trackings.data);
+        let infos = await this._infos([ ...db.pluck('id').toArray(), ...db.pluck('tracking_id').toArray() ]);
         // configurar tramites
         await tramites.map(t => {
             t.dependencia_origen = dependencias.where('id', t.dependencia_origen_id).first() || {};
@@ -135,7 +151,7 @@ class TimelineController {
             return t;
         })
         // configurar tracking
-        trackings.data = await this._settingTracking(trackings, tramites, dependencias, people);
+        trackings.data = await this._settingTracking(trackings, tramites, dependencias, people, infos);
         // trámite
         tramite.entity = entity;
         tramite.person = people.where('id', tramite.person_id).first() || {};

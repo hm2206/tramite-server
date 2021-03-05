@@ -11,10 +11,12 @@ const moment = require('moment');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
 const { collect } = require('collect.js');
 const File = use('App/Models/File');
+const Info = use('App/Models/info');
 const DB = use('Database');
 
 class NextController {
 
+    trx = null;
     status = "";
     multiple = [];
     role = null;
@@ -97,13 +99,13 @@ class NextController {
         // quitar tracking actual
         await Tracking.query()
             .where('tramite_id', this.tracking.tramite_id)
-            .update({ current: 0 });
+            .update({ current: 0 }, this.trx);
         // deshabilitar por status
         await Tracking.query()
             .where('tramite_id', this.tracking.tramite_id)
             .where('current', 0)
             .whereIn('status', ['REGISTRADO', 'PENDIENTE', 'ENVIADO'])
-            .update({ visible: 0 });
+            .update({ visible: 0 }, this.trx);
     }
 
     // switch modo
@@ -134,16 +136,6 @@ class NextController {
         }
     }
 
-    // copiar archivos
-    _copyFiles = async (tracking_id, tracking_origen_id) => {
-        let files = await DB.table('files')
-            .where('object_type', 'App/Models/Tracking')
-            .where('object_id', tracking_origen_id)
-            .select(DB.raw(`${tracking_id} as object_id`), 'object_type', 'name', 'extname', 'size', 'url', 'real_path', 'tag');
-        // copiar
-        if (files.length) await File.createMany(files);
-    }
-
     // obtener al boss
     _getBoss = async (dependencia_id) => {
         return await Role.query()
@@ -168,6 +160,8 @@ class NextController {
         await this._getTracking({ params, request });
         await this._validateAction(request.input('status'));
         await this._switchModo();
+        // guardar transacción
+        this.trx = await DB.beginTransaction();
         // tracking
         let newTracking = await this[`_${this.status.toLowerCase()}`].apply(this, [{ params, request }]);
         // response
@@ -234,18 +228,33 @@ class NextController {
         payload_derivado.person_id = this.tracking.person_id;
         payload_derivado.current = 0;
         payload_derivado.status = 'DERIVADO';
-        // crear recibido
-        let recibido = await Tracking.create(payload_recibido);
-        // agregar tracking_id al derivado
-        payload_derivado.tracking_id = recibido.id;
-        // crear derivado
-        let derivado = await Tracking.create(payload_derivado);
-        // deshabilitar tracking actual
-        this._disableTrackingCurrent();
-        // generar copia
-        await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
-        // config tracking
-        return derivado;
+        try {
+            // obtener info
+            await this._info({ request, onlyDescription: false }, (info) => {
+                payload_derivado.info_id = info.id;
+                payload_recibido.info_id = info.id;
+            });
+            // crear recibido
+            let recibido = await Tracking.create(payload_recibido, this.trx);
+            // agregar tracking_id al derivado
+            payload_derivado.tracking_id = recibido.id;
+            // crear derivado
+            let derivado = await Tracking.create(payload_derivado, this.trx);
+            // deshabilitar tracking actual
+            this._disableTrackingCurrent();
+            // generar copia
+            await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
+            // guardar cambios
+            this.trx.commit();
+            // config tracking
+            return derivado;
+        } catch (error) {
+            // cancelar cambios
+            this.tracking.merge({ visible: 1, current: 1 });
+            await this.tracking.save();
+            this.trx.rollback();
+            throw new CustomException("No se pudó procesar la acción");
+        }
     }
 
     // anular
@@ -303,26 +312,43 @@ class NextController {
             status: 'ACEPTADO',
             readed_at: null
         };
-        // crear aceptado
-        let aceptado = await Tracking.create(payload_aceptado);
-        // obtener usuario actual
-        let current_user = await this._getUser({ id: this.tracking.user_verify_id, request });
-        // genearar pendiente
+        // generar payload pendiente
         let payload_pendiente = Object.assign({}, payload_aceptado);
-        payload_pendiente.dependencia_id = this.tracking.dependencia_id;
-        payload_pendiente.person_id = current_user.person_id;
-        payload_pendiente.user_verify_id = current_user.id;
-        payload_pendiente.tracking_id = aceptado.id;
-        payload_pendiente.revisado = 0;
-        payload_pendiente.current = 1;
-        payload_pendiente.modo = this.tracking.modo;
-        payload_pendiente.status = 'PENDIENTE';
-        // crear pendiente
-        let pendiente = await Tracking.create(payload_pendiente);
-        // deshabilitar tracking
-        await this._disableTrackingCurrent();
-        // response
-        return pendiente;
+        // procesar datos
+        try {
+            // obtener info
+            await this._info({ request }, (info) => {
+                payload_aceptado.info_id = info.id;
+                payload_pendiente.info_id = info.id;
+            });
+            // crear aceptado
+            let aceptado = await Tracking.create(payload_aceptado, this.trx);
+            // obtener usuario actual
+            let current_user = await this._getUser({ id: this.tracking.user_verify_id, request });
+            // genearar pendiente
+            payload_pendiente.dependencia_id = this.tracking.dependencia_id;
+            payload_pendiente.person_id = current_user.person_id;
+            payload_pendiente.user_verify_id = current_user.id;
+            payload_pendiente.tracking_id = aceptado.id;
+            payload_pendiente.revisado = 0;
+            payload_pendiente.current = 1;
+            payload_pendiente.modo = this.tracking.modo;
+            payload_pendiente.status = 'PENDIENTE';
+            // crear pendiente
+            let pendiente = await Tracking.create(payload_pendiente, this.trx);
+            // deshabilitar tracking
+            await this._disableTrackingCurrent();
+            // guardar cambios
+            this.trx.commit();
+            // response
+            return pendiente;
+        } catch (error) {
+            // cancelar cambios
+            this.tracking.merge({ visible: 1, current: 1 });
+            await this.tracking.save();
+            this.trx.rollback();
+            throw new CustomException("No se pudó procesar la acción");
+        }
     }
 
     // rechazar
@@ -350,25 +376,42 @@ class NextController {
             status: 'PENDIENTE',
             readed_at: null
         };
-        // crear pendiente
-        let pendiente = await Tracking.create(payload_pendiente);
-        // obtener rechazado
+        // generar payload rechazado
         let payload_rechazado = Object.assign({}, payload_pendiente);
-        payload_rechazado.dependencia_id = this.tracking.dependencia_id;
-        payload_rechazado.person_id = this.tracking.person_id;
-        payload_rechazado.user_verify_id = this.tracking.user_verify_id;
-        payload_rechazado.tracking_id = pendiente.id;
-        payload_rechazado.revisado = 1;
-        payload_rechazado.alert = 0;
-        payload_rechazado.current = 0;
-        payload_rechazado.next = null;
-        payload_rechazado.status = 'RECHAZADO';
-        // crear rechazado
-        let rechazado = await Tracking.create(payload_rechazado);
-        // deshabilitar tracking
-        await this._disableTrackingCurrent();
-        // response
-        return rechazado;
+        // procesar tracking
+        try {
+            // obtener info
+            await this._info({ request }, (info) => {
+                payload_pendiente.info_id = info.id;
+                payload_rechazado.info_id = info.id;
+            });
+            // crear pendiente
+            let pendiente = await Tracking.create(payload_pendiente, this.trx);
+            // obtener rechazado
+            payload_rechazado.dependencia_id = this.tracking.dependencia_id;
+            payload_rechazado.person_id = this.tracking.person_id;
+            payload_rechazado.user_verify_id = this.tracking.user_verify_id;
+            payload_rechazado.tracking_id = pendiente.id;
+            payload_rechazado.revisado = 1;
+            payload_rechazado.alert = 0;
+            payload_rechazado.current = 0;
+            payload_rechazado.next = null;
+            payload_rechazado.status = 'RECHAZADO';
+            // crear rechazado
+            let rechazado = await Tracking.create(payload_rechazado, this.trx);
+            // deshabilitar tracking
+            await this._disableTrackingCurrent();
+            // guardar cambios
+            this.trx.commit();
+            // response
+            return rechazado;
+        } catch (error) {
+            // cancelar cambios
+            this.tracking.merge({ visible: 1, current: 1 });
+            await this.tracking.save();
+            this.trx.rollback();
+            throw new CustomException(error.message);
+        }
     }
 
     // responder
@@ -398,23 +441,40 @@ class NextController {
         }
         // generar respondido 
         let payload_respondido = Object.assign({}, payload_recibido);
-        payload_respondido.tramite_id = this.tracking.tramite_id;
-        payload_respondido.dependencia_id = this.tracking.dependencia_id;
-        payload_respondido.person_id = this.tracking.person_id;
-        payload_respondido.user_verify_id = this.tracking.user_verify_id;
-        payload_respondido.current = 0;
-        payload_respondido.modo = this.tracking.dependencia_id != origen.dependencia_id ? 'DEPENDENCIA' : 'YO';
-        payload_respondido.status = 'RESPONDIDO';
-        // crear recibido
-        let recibido = await Tracking.create(payload_recibido);
-        // obtener tracking id
-        payload_respondido.tracking_id = recibido.id;
-        // crear respondido
-        let respondido = await Tracking.create(payload_respondido);
-        // deshabilitar tracking actual
-        this._disableTrackingCurrent();
-        // response
-        return respondido;
+        // processar datos
+        try {
+            // obtener info
+            await this._info({ request, onlyDescription: false }, (info) => {
+                payload_recibido.info_id = info.id;
+                payload_respondido.info_id = info.id;
+            });
+            // setting payload respondido
+            payload_respondido.tramite_id = this.tracking.tramite_id;
+            payload_respondido.dependencia_id = this.tracking.dependencia_id;
+            payload_respondido.person_id = this.tracking.person_id;
+            payload_respondido.user_verify_id = this.tracking.user_verify_id;
+            payload_respondido.current = 0;
+            payload_respondido.modo = this.tracking.dependencia_id != origen.dependencia_id ? 'DEPENDENCIA' : 'YO';
+            payload_respondido.status = 'RESPONDIDO';
+            // crear recibido
+            let recibido = await Tracking.create(payload_recibido, this.trx);
+            // obtener tracking id
+            payload_respondido.tracking_id = recibido.id;
+            // crear respondido
+            let respondido = await Tracking.create(payload_respondido, this.trx);
+            // deshabilitar tracking actual
+            this._disableTrackingCurrent();
+            // guardar cambios
+            this.trx.commit();
+            // response
+            return respondido;
+        } catch (error) {
+            // cancelar cambios
+            this.tracking.merge({ visible: 1, current: 1 });
+            await this.tracking.save();
+            this.trx.rollback();
+            throw new CustomException(error.message);
+        }
     }
 
     // finalizar
@@ -429,30 +489,46 @@ class NextController {
             tracking_id: this.tracking.id,
             revisado: 1,
             visible: 1,
-            current: 0,
+            current: 1,
+            first: 1,
             modo: this.tracking.modo,
             status: 'FINALIZADO',
             readed_at: null
         }
-        // verificar modo 
-        await this._validateModo();
-        // crear anulado
-        let finalizado = await Tracking.create(payload);
-        // deshabilitar tracking
-        await this._disableTrackingCurrent();
-        // cambiar estado
-        await Tramite.query()
-            .where('id', finalizado.tramite_id)
-            .update({ state : 0 });
-        // response
-        return finalizado;
+        // procesar tracking
+        try {
+            // obtener info
+            await this._info({ request }, (info) => {
+                payload.info_id = info.id;
+            });
+            // verificar modo 
+            await this._validateModo();
+            // crear anulado
+            let finalizado = await Tracking.create(payload, this.trx);
+            // deshabilitar tracking
+            await this._disableTrackingCurrent();
+            // cambiar estado
+            await Tramite.query()
+                .where('id', finalizado.tramite_id)
+                .update({ state : 0 });
+            // guardar cambios
+            this.trx.commit();
+            // response
+            return finalizado;
+        } catch (error) {
+            // cancelar cambios
+            this.trx.rollback();
+            this.tracking.merge({ visible: 1, current: 1 });
+            await this.tracking.save();
+            await Tramite.query().where('id', this.tracking.tramite_id).update({ state : 1 });
+            throw new CustomException(error.message);
+        }
     }
 
     // multiple
     _multiple = async ({ dependencia_id = '', current_tracking, status_action }) => {
         // validar permitidos
         let allow = ['DERIVADO'];
-        let action = ['DERIVADO'];
         if (!this.multiple.length) return false;
         if (!allow.includes(this.status)) return false;
         this.multiple = collect(this.multiple || []);
@@ -490,10 +566,30 @@ class NextController {
             }
         });
         // generar copia
-        let count_multiple = await Tracking.createMany(payload.toArray());
+        await Tracking.createMany(payload.toArray(), this.trx);
         // activar modo multiple
         current_tracking.merge({ multiple: 1 });
-        await current_tracking.save();
+        await current_tracking.save(this.trx);
+    }
+
+    // info
+    _info = async ({ request, onlyDescription = true }, callback = null) => {
+        let description = request.input('description', '');
+        let isFiles = request.file('files');
+        if ((!onlyDescription && (isFiles || description)) || (onlyDescription && description)) {
+            let info = await Info.create({ description }, this.trx);
+            // processar archivos
+            if (isFiles) {
+                let apiFile = new FileController();
+                request.object_id = info.id;
+                request.object_type = 'App/Models/Info';
+                request.object_file = info;
+                let files = await apiFile.store({ request });
+            }
+            return typeof callback == 'function' ? callback(info) : info;
+        }
+        // response error
+        return null;
     }
 }
 

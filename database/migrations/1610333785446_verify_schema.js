@@ -9,7 +9,7 @@ class VerifySchema extends Schema {
       table.increments()
       table.integer('tracking_id').notNullable();
       table.integer('user_id').notNullable();
-      table.timestamp('date_verify');
+      table.datetime('date_verify');
       table.boolean('state').defaultTo(true);
       table.timestamps()
     })

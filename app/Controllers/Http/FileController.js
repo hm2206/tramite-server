@@ -17,11 +17,11 @@ class FileController {
 
     allow = [
         'App/Models/Tramite',
-        'App/Models/Tracking'
+        'App/Models/Info'
     ];
 
     // crear archivo
-    store = async ({ request }) => {
+    store = async ({ request, trx = null }) => {
         let catchRequest = {
             object_type: request.input('object_type', request.object_type || ""),
             object_id: request.input('object_id', request.object_id || "")
@@ -36,7 +36,7 @@ class FileController {
         // validar objecto
         if (!this.allow.includes(object_type)) throw new CustomException("El objecto no está permitido!", "ERR_NOT_ALLOW_OBJECT", 403)
         let Object = use(object_type);
-        let obj = await Object.find(object_id);
+        let obj = request.object_file ? request.object_file : await Object.find(object_id, trx);
         if (!obj) throw new NotFoundModelException("El objecto");
         // archivo
         let file = await Storage.saveFile(request, "files", {

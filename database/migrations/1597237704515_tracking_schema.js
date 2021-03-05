@@ -13,6 +13,7 @@ class TrackingSchema extends Schema {
       table.integer('user_verify_id').comment('Usuario que realizara la verificación del trámite').notNullable();
       table.integer('user_id').comment('Usuario que realizó la acción');
       table.integer('tracking_id');
+      table.integer('info_id');
       table.boolean('alert').defaultTo(false).comment('Tracking que há sido rechazado');
       table.boolean('revisado').defaultTo(false).comment('Tracking que tiene permiso para salir de la dependencia');
       table.boolean('visible').defaultTo(true);

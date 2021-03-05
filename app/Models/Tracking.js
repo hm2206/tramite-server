@@ -41,6 +41,10 @@ class Tracking extends Model {
         return this.belongsTo('App/Models/Tracking', 'tracking_id', 'id');
     }
 
+    info = () => {
+        return this.belongsTo('App/Models/Info');
+    }
+
 }
 
 module.exports = Tracking

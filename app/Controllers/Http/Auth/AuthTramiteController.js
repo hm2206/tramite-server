@@ -74,6 +74,9 @@ class AuthTramiteController {
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .with('verify')
             .with('tracking')
+            .with('info', (build) => build.with('files', (buildF) => {
+                buildF.where('object_type', 'App/Models/Info');
+            }))
             .with('tramite', (build) => {
                 build.with('tramite_type');
             }).where('trackings.id', params.id)
@@ -120,7 +123,6 @@ class AuthTramiteController {
         // archivos
         let files = await this._files([tracking.id, tracking.tramite_id]);
         // add files
-        tracking.files = await files.where('object_type', 'App/Models/Tracking').where('object_id', tracking.id).toArray();
         tracking.tramite.files = await files.where('object_type', 'App/Models/Tramite').where('object_id', tracking.tramite_id).toArray();
         tracking.tramite.code_qr = code_qr;
         // obtener files antiguos
