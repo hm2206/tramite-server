@@ -25,7 +25,7 @@ class NextController {
     auth = {};
     tracking = {};
     actions = {
-        REGISTRADO: ['ANULADO', 'DERIVADO'],
+        REGISTRADO: ['ANULADO', 'ENVIADO'],
         PENDIENTE: ['DERIVADO', 'RESPONDIDO', 'FINALIZADO'],
         RECIBIDO: ['ACEPTADO', 'RECHAZADO']
     };
@@ -170,7 +170,90 @@ class NextController {
             message: `El trámite fué: ${this.status.toUpperCase()}, correctamente!`,
             tracking: newTracking,
         }
-    }  
+    } 
+
+    _enviado = async ({ params, request }) => {
+        let rules = {
+            dependencia_destino_id: "required"
+        }
+        // validar si es a la misma dependencia
+        let self_dependencia = this.dependencia.id == request.input('dependencia_destino_id') ? 1 : 0;
+        if (self_dependencia) rules.user_destino_id = 'required';
+        // validar salida del documento
+        if (!self_dependencia && this.boss.user_id != this.auth.id) {
+            if (this.tracking.modo != 'DEPENDENCIA') throw new CustomException("Usted no puede derivar el trámite fuera de la dependencia");
+            if (!this.role) throw new CustomException("Usted no cuenta con un rol para derivar el trámite fuera de la dependencia");
+        }
+        // validar request
+        await validation(validateAll, request.all(), rules);
+        // validar user
+        if (self_dependencia && this.auth.id == request.input('user_destino_id'))  
+            throw new ValidatorError([{ field: 'user_destino_id', message: 'Usted no puede ser el usuario destino' }]);
+        // generar recibido
+        let payload_recibido = {
+            tramite_id: this.tracking.tramite_id,
+            dependencia_id: request.input('dependencia_destino_id'),
+            person_id: null,
+            user_verify_id: null,
+            user_id: this.auth.id,
+            tracking_id: this.tracking.id,
+            revisado: 1,
+            visible: 1,
+            current: 1,
+            first: 0,
+            status: 'RECIBIDO',
+            readed_at: null
+        }
+        // validar tramite interno
+        if (!self_dependencia) {
+            let current_boss = await this._getBoss(payload_recibido.dependencia_id);
+            if (!current_boss) throw new CustomException("No se puede derivar a la dependencia por que no cuenta con un jefe");
+            // obtener user
+            let current_user = await this._getUser({ id: current_boss.user_id, request });
+            payload_recibido.user_verify_id = current_user.id;
+            payload_recibido.modo = 'DEPENDENCIA';
+            payload_recibido.person_id = current_user.person_id;
+        } else {
+            payload_recibido.user_verify_id = request.input('user_destino_id');
+            // obtener los datos
+            let current_user = await this._getUser({ id: payload_recibido.user_verify_id, request });
+            payload_recibido.person_id = current_user.person_id;
+        }
+        // crear derivado
+        let payload_derivado = Object.assign({}, payload_recibido);
+        payload_derivado.dependencia_id = this.tracking.dependencia_id;
+        payload_derivado.user_verify_id = this.tracking.user_verify_id;
+        payload_derivado.person_id = this.tracking.person_id;
+        payload_derivado.current = 0;
+        payload_derivado.status = 'ENVIADO';
+        try {
+            // obtener info
+            await this._info({ request, onlyDescription: false }, (info) => {
+                payload_derivado.info_id = info.id;
+                payload_recibido.info_id = info.id;
+            });
+            // crear recibido
+            let recibido = await Tracking.create(payload_recibido, this.trx);
+            // agregar tracking_id al derivado
+            payload_derivado.tracking_id = recibido.id;
+            // crear derivado
+            let derivado = await Tracking.create(payload_derivado, this.trx);
+            // deshabilitar tracking actual
+            this._disableTrackingCurrent();
+            // generar copia
+            await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
+            // guardar cambios
+            this.trx.commit();
+            // config tracking
+            return derivado;
+        } catch (error) {
+            // cancelar cambios
+            this.tracking.merge({ visible: 1, current: 1 });
+            await this.tracking.save();
+            this.trx.rollback();
+            throw new CustomException("No se pudó procesar la acción");
+        }
+    }
 
     // derivar
     _derivado = async ({ params, request }) => {
