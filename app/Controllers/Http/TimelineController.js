@@ -130,7 +130,7 @@ class TimelineController {
             .with('tracking')
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .where('tra.slug', tramite.slug)
-            .whereIn('trackings.status', ['REGISTRADO', 'DERIVADO', 'ACEPTADO', 'RECHAZADO', 'RESPONDIDO', 'ANULADO', 'FINALIZADO'])
+            .whereIn('trackings.status', ['REGISTRADO', 'ENVIADO', 'DERIVADO', 'ACEPTADO', 'RECHAZADO', 'RESPONDIDO', 'ANULADO', 'FINALIZADO'])
             .select('trackings.*')
             .paginate(page || 1, 20);
         trackings = await trackings.toJSON();
