@@ -41,6 +41,10 @@ class Tracking extends Model {
         return this.belongsTo('App/Models/Tracking', 'tracking_id', 'id');
     }
 
+    tracking_send = () => {
+        return this.hasOne('App/Models/Tracking', 'id', 'tracking_id');
+    }
+
     info = () => {
         return this.belongsTo('App/Models/Info');
     }

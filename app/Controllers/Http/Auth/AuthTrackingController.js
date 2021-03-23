@@ -11,12 +11,16 @@ class AuthTrackingController {
     // obtener dependencias
     _dependencias = async (request, trackings) => {
         let db = collect(trackings.data);
-        let plucked = db.pluck('dependencia_origen_id', 'dependencia_destino_id');
+        let plucked = db.pluck('dependencia_id');
+        // console.log(db);
         let pluckedTramite = db.pluck('tramite.dependencia_origen_id');
+        let pluckedTracking = db.pluck('tracking.dependencia_id');
+        let pluckedTrackingSend = db.pluck('tracking_send.dependencia_id').pluck('dependencia_id');
         let ids = collect([
-            ...plucked.keys().toArray(), 
-            ...plucked.values().toArray(),
-            ...pluckedTramite.toArray()
+            ...plucked.toArray(),
+            ...pluckedTramite.toArray(),
+            ...pluckedTracking.toArray(),
+            ...pluckedTrackingSend.toArray(),
         ]).toArray();
         // obtener dependencias
         let { dependencia } = await request.api_authentication.get(`dependencia?ids[]=${ids.join('&ids[]=')}`)
@@ -83,6 +87,8 @@ class AuthTrackingController {
             .with('tramite', (build) => {
                 build.with('tramite_type')
             })
+            .with('tracking')
+            .with('tracking_send')
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .select('trackings.*', 'tra.person_id as tramite_person_id')
             .orderBy('trackings.created_at', 'DESC')
@@ -114,13 +120,32 @@ class AuthTrackingController {
         let configs = await this._config(request, trackings);
         let configs_index = {};
         let configs_keys = configs.pluck('key').toArray();
+        // actions
+        let actions = {
+            PENDIENTE: "tracking",
+            ACEPTADO: "tracking",
+            DERIVADO: "tracking_send",
+            FINALIZADO: "tracking",
+            RECHAZADO: "tracking",
+            RECIBIDO: "tracking",
+            RESPONDIDO: "tracking",
+            COPIA: "tracking",
+            ENVIADO: "tracking"
+        }
+        // console.log(dependencias);
         // setting datos
         await trackings.data.map(async (d, indexD) => {
+            let current_dependencia = await dependencias.where('id', d.dependencia_id).first() || {};
             // config tracking
-            d.dependencia_origen = await dependencias.where('id', d.dependencia_origen_id).first() || {};
-            d.dependencia_destino = await dependencias.where('id', d.dependencia_destino_id).first() || {};
+            d.dependencia = current_dependencia
             d.person = await people.where('id', d.person_id).first() || {};
             d.files = await files.where('object_type', 'App/Models/Tracking').where('object_id', d.id).toArray() || [];
+            // validar traking
+            let validation = actions[d.status];
+            if (validation) {
+                let current_tracking = d[validation];
+                d.dependencia = await dependencias.where('id', current_tracking.dependencia_id).first() || {};
+            }
             // config trámite
             d.tramite.dependencia_origen = await dependencias.where('id', d.tramite.dependencia_origen_id).first() || {};
             d.tramite.person = await people.where('id', d.tramite.person_id).first() || {};
