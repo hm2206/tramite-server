@@ -49,6 +49,16 @@ Tramite.tracking = async (request, tramite) => {
             .first();
         if (!before_tracking) throw new CustomException(`No se encontró un seguimiento activo del trámite raíz!`);
         tracking_id = before_tracking.tracking_id || before_tracking.id;
+        // finalizar
+        let allow = ['RESPONDIDO'];
+        if (allow.includes(next)) {
+            before_tracking.merge({
+                current: 0,
+                status: 'FINALIZADO'
+            });
+            // guardar los cambios
+            await before_tracking.save();
+        }
     }
     // crear tracking
     await Tracking.create({
