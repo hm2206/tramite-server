@@ -427,7 +427,7 @@ class NextController {
             payload_pendiente.person_id = current_user.person_id;
             payload_pendiente.user_verify_id = current_user.id;
             payload_pendiente.tracking_id = aceptado.id;
-            payload_pendiente.revisado = 0;
+            payload_pendiente.revisado = this.tracking.is_action ? 0 : 1;
             payload_pendiente.current = 1;
             payload_pendiente.modo = this.tracking.modo;
             payload_pendiente.status = this.tracking.is_action ? 'PENDIENTE' : 'FINALIZADO';
