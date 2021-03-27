@@ -12,6 +12,7 @@ const NotFoundModelException = require('../../Exceptions/NotFoundModelException'
 const { collect } = require('collect.js');
 const Info = use('App/Models/Info');
 const DB = use('Database');
+const File = use('App/Models/File');
 
 class NextController {
 
@@ -155,6 +156,7 @@ class NextController {
         this.dependencia = request.$dependencia;
         this.auth = request.$auth;
         this.multiple = request.input('multiple') ? JSON.parse(request.input('multiple')) : [];
+        this.is_action = request.input('is_action', 0);
         // obtener tracking
         await this._getTracking({ params, request });
         await this._validateAction(request.input('status'));
@@ -176,7 +178,7 @@ class NextController {
         return await File.query()
             .where('object_type', 'App/Models/Tramite')
             .where('object_id', this.tracking.tramite_id)
-            .whereNotNull('tag')
+            .whereNotNull('observation')
             .getCount('id');
     }
 
@@ -212,6 +214,7 @@ class NextController {
             visible: 1,
             current: 1,
             first: 0,
+            is_action: this.is_action,
             status: 'RECIBIDO',
             readed_at: null
         }
@@ -297,6 +300,7 @@ class NextController {
             current: 1,
             first: 0,
             status: 'RECIBIDO',
+            is_action: this.is_action,
             readed_at: null
         }
         // validar tramite interno
@@ -649,11 +653,12 @@ class NextController {
                     user_verify_id: exists.user_id,
                     user_id: this.auth.id,
                     tracking_id: current_tracking.id,
-                    current: m.action ? 1 : 0,
+                    current: 1,
                     visible: 1,
                     revisado: 1,
                     first: 0,
                     modo: 'DEPENDENCIA',
+                    is_action: m.action ? 1 : 0,
                     status: m.action ? 'RECIBIDO' : 'COPIA'
                 });
             }
