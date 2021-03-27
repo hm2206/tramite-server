@@ -430,7 +430,7 @@ class NextController {
             payload_pendiente.revisado = 0;
             payload_pendiente.current = 1;
             payload_pendiente.modo = this.tracking.modo;
-            payload_pendiente.status = 'PENDIENTE';
+            payload_pendiente.status = this.tracking.is_action ? 'PENDIENTE' : 'FINALIZADO';
             // crear pendiente
             let pendiente = await Tracking.create(payload_pendiente, this.trx);
             // deshabilitar tracking
