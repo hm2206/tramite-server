@@ -172,10 +172,21 @@ class NextController {
         }
     } 
 
+    _count_file_observer = async () => {
+        return await File.query()
+            .where('object_type', 'App/Models/Tramite')
+            .where('object_id', this.tracking.tramite_id)
+            .whereNotNull('tag')
+            .getCount('id');
+    }
+
     _enviado = async ({ params, request }) => {
         let rules = {
             dependencia_destino_id: "required"
         }
+        // validar archivo observador
+        let count_file_observer = await this._count_file_observer();
+        if (count_file_observer) throw new CustomException("Existe uno o varios archivos observados");
         // validar si es a la misma dependencia
         let self_dependencia = this.dependencia.id == request.input('dependencia_destino_id') ? 1 : 0;
         if (self_dependencia) rules.user_destino_id = 'required';
