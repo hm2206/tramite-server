@@ -625,7 +625,7 @@ class NextController {
     // multiple
     _multiple = async ({ dependencia_id = '', current_tracking, status_action }) => {
         // validar permitidos
-        let allow = ['DERIVADO'];
+        let allow = ['DERIVADO', 'ENVIADO'];
         if (!this.multiple.length) return false;
         if (!allow.includes(this.status)) return false;
         this.multiple = collect(this.multiple || []);
