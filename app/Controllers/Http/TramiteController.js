@@ -1,12 +1,10 @@
 'use strict'
 
-const { validation, ValidatorError, Storage } = require('validator-error-adonis');
+const { validation, ValidatorError } = require('validator-error-adonis');
 const { validateAll } = use('Validator');
 const TramiteType = use('App/Models/TramiteType');
 const Tramite = use('App/Models/Tramite');
 const uid = require('uid')
-const Helpers = use('Helpers')
-const { LINK, URL } = require('../../../utils')
 const Event = use('Event');
 const codeQR = require('qrcode');
 const Env = use('Env');
@@ -14,6 +12,9 @@ const Role = use('App/Models/Role');
 const FileController = require('./FileController');
 const CustomException = require('../../Exceptions/CustomException');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
+const { PDFDocument } = require('pdf-lib');
+const File = use('App/Models/File');
+const Drive = use('Drive');
 
 class TramiteController {
 
@@ -23,7 +24,6 @@ class TramiteController {
             person_id: "required",
             tramite_type_id: 'required|max:11',
             document_number: 'required|min:4|max:255',
-            folio_count: 'required|min:1|max:10',
             asunto: 'required|min:4'
         });
         // obtener tramite documento
@@ -57,7 +57,7 @@ class TramiteController {
             slug,
             document_number: request.input('document_number'),
             tramite_type_id: request.input('tramite_type_id'),
-            folio_count: request.input('folio_count'),
+            folio_count: 0,
             observation: request.input('observation'),
             asunto: request.input('asunto'),
             dependencia_origen_id: dependencia.id,
@@ -72,10 +72,18 @@ class TramiteController {
             let files = new FileController;
             request.object_type = 'App/Models/Tramite';
             request.object_id = tramite.id;
-            await files.store({ request });
+            let upload = await files.store({ request });
             // send event
             await Event.fire('tramite::tracking', request, tramite);
-            Event.fire('tramite::new', request, tramite, auth.person, auth.person, dependencia);
+            Event.fire('tramite::new', request, tramite, auth.person, auth.person, dependencia); 
+            // obtener folio
+            let [file] = upload.files;
+            let current_file = await File.find(file.id);
+            let embedPdf = await Drive.get(current_file.real_path);
+            let pdfDoc = await PDFDocument.load(embedPdf);
+            // actualizar folio
+            tramite.merge({ folio_count: pdfDoc.getPageCount() });
+            await tramite.save();
             // response
             return {
                 success: true,

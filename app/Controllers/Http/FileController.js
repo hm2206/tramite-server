@@ -64,6 +64,7 @@ class FileController {
         });
         // crear files
         let files = await File.createMany(payload);
+        files = JSON.parse(JSON.stringify(files));
         // response
         return { 
             success: true,
