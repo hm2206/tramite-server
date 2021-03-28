@@ -28,7 +28,8 @@ class NextController {
     actions = {
         REGISTRADO: ['ANULADO', 'ENVIADO'],
         PENDIENTE: ['DERIVADO', 'RESPONDIDO', 'FINALIZADO'],
-        RECIBIDO: ['ACEPTADO', 'RECHAZADO']
+        RECIBIDO: ['ACEPTADO', 'RECHAZADO'],
+        COPIA: ['ACEPTADO'],
     };
     hidden = ['REGISTER'];
 
@@ -182,6 +183,10 @@ class NextController {
             .getCount('id');
     }
 
+    _actionStatus = async (status_default = 'RECIBIDO') => {
+        return this._is_action ? status_default : 'COPIA';
+    }
+
     _enviado = async ({ params, request }) => {
         let rules = {
             dependencia_destino_id: "required"
@@ -215,7 +220,7 @@ class NextController {
             current: 1,
             first: 0,
             is_action: this.is_action,
-            status: 'RECIBIDO',
+            status: this._actionStatus(),
             readed_at: null
         }
         // validar tramite interno
@@ -299,7 +304,7 @@ class NextController {
             visible: 1,
             current: 1,
             first: 0,
-            status: 'RECIBIDO',
+            status: this._actionStatus(),
             is_action: this.is_action,
             readed_at: null
         }
