@@ -183,7 +183,8 @@ class NextController {
             .getCount('id');
     }
 
-    _actionStatus = async (status_default = 'RECIBIDO') => {
+    _actionStatus = (status_default = null) => {
+        status_default = 'RECIBIDO';
         return this._is_action ? status_default : 'COPIA';
     }
 
