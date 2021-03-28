@@ -157,7 +157,7 @@ class NextController {
         this.dependencia = request.$dependencia;
         this.auth = request.$auth;
         this.multiple = request.input('multiple') ? JSON.parse(request.input('multiple')) : [];
-        this.is_action = request.input('is_action', 0);
+        this.is_action = request.input('is_action') == 1 ? true : false;
         // obtener tracking
         await this._getTracking({ params, request });
         await this._validateAction(request.input('status'));
@@ -185,7 +185,7 @@ class NextController {
 
     _actionStatus = (status_default = null) => {
         status_default = 'RECIBIDO';
-        return this._is_action ? status_default : 'COPIA';
+        return this.is_action ? status_default : 'COPIA';
     }
 
     _enviado = async ({ params, request }) => {
