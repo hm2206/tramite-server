@@ -46,6 +46,7 @@ class AuthTramiteController {
         let people = await this._people(request, personIds);
         // obtener files
         let tramiteIds = await datos.pluck('id').toArray();
+        console.log(tramiteIds);
         let files = await this._files(tramiteIds, ['App/Models/Tramite']);
         // setting
         await tramites.data.map(async tra => {
@@ -99,21 +100,21 @@ class AuthTramiteController {
         // serializar tracking
         tracking = await tracking.toJSON();
         // obtener dependencias
-        let dependenciaIds = [tracking.dependencia_id, tramite.dependencia_origen_id, tracking.tracking ? tracking.tracking.dependencia_id : null];
+        let dependenciaIds = [tracking.dependencia_id, tramite.dependencia_origen_id, tracking.tracking ? tracking.tracking.dependencia_id : ""];
         let dependencias = await this._dependencias(request, dependenciaIds);
         // obtener persona
         let personIds = [tracking.person_id, tramite.person_id, tracking.tracking ? tracking.tracking.person_id : null];
         let people = await this._people(request, personIds);
         // setting tracking
         tracking.person = people.where('id', tracking.person_id).first() || {};
-        tracking.dependencia = dependencias.where('id', tracking.dependencia_id).first() || {};
+        tracking.dependencia = dependencias.where('id', tracking.dependencia_id || "").first() || {};
         // original
         tracking.person_origen = tracking.person;
         tracking.dependencia_origen = tracking.dependencia;
         // validar trcking anidado
         if (tracking.tracking) {
             tracking.person = people.where('id', tracking.tracking.person_id).first() || {};
-            tracking.dependencia = dependencias.where('id', tracking.tracking.dependencia_id).first() || {};
+            tracking.dependencia = dependencias.where('id', tracking.tracking.dependencia_id || "").first() || {};
             tracking.tracking.person = tracking.person;
             tracking.tracking.dependencia = tracking.dependencia;
         }

@@ -124,7 +124,7 @@ class AuthTrackingController {
         let actions = {
             PENDIENTE: "tracking",
             ACEPTADO: "tracking",
-            DERIVADO: "tracking_send",
+            DERIVADO: "tracking",
             FINALIZADO: "tracking",
             RECHAZADO: "tracking",
             RECIBIDO: "tracking",
@@ -135,7 +135,7 @@ class AuthTrackingController {
         // console.log(dependencias);
         // setting datos
         await trackings.data.map(async (d, indexD) => {
-            let current_dependencia = await dependencias.where('id', d.dependencia_id).first() || {};
+            let current_dependencia = await dependencias.where('id', d.dependencia_id || "").first() || {};
             // config tracking
             d.dependencia = current_dependencia
             d.person = await people.where('id', d.person_id).first() || {};
@@ -144,10 +144,13 @@ class AuthTrackingController {
             let validation = actions[d.status];
             if (validation) {
                 let current_tracking = d[validation];
-                d.dependencia = await dependencias.where('id', current_tracking.dependencia_id).first() || {};
+                d.dependencia = {};
+                if (current_tracking) {
+                    d.dependencia = await dependencias.where('id', current_tracking.dependencia_id || "").first() || {};
+                }
             }
             // config trámite
-            d.tramite.dependencia_origen = await dependencias.where('id', d.tramite.dependencia_origen_id).first() || {};
+            d.tramite.dependencia_origen = await dependencias.where('id', d.tramite.dependencia_origen_id || "").first() || {};
             d.tramite.person = await people.where('id', d.tramite.person_id).first() || {};
             d.tramite.files = await files.where('object_type', 'App/Models/Tramite').where('object_id', d.tramite.id).toArray() || [];
             d.is_next = true;
