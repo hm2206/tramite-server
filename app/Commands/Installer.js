@@ -4,7 +4,6 @@ const { Command } = require('@adonisjs/ace')
 const { authentication } = require('../Services/apis');
 const { getSystemKey } = require('../Services/tools');
 const routes = require('../Services/method.json');
-const FormData = require('form-data');
 
 class Installer extends Command {
   static get signature () {
