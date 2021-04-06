@@ -4,7 +4,7 @@
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
 const { authentication, tramite } = require('../Services/apis');
-const { getClient, getAuthorization } = require('../Services/tools');
+const { getClient, getAuthorization, getSystemKey } = require('../Services/tools');
 
 class AppProvider {
   /**
@@ -14,8 +14,9 @@ class AppProvider {
    */
   async handle ({ request, response }, next) {
     // configurar axios 
-    await authentication.config(getClient(request));
-    await authentication.config(getAuthorization(request));
+    authentication.config(getClient(request));
+    authentication.config(getAuthorization(request));
+    authentication.config({ SystemSecret: getSystemKey() });
     // add apis en el ctx;
     request.api_authentication = authentication;
     request.api_tramite = tramite;

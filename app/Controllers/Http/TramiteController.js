@@ -73,9 +73,6 @@ class TramiteController {
             request.object_type = 'App/Models/Tramite';
             request.object_id = tramite.id;
             let upload = await files.store({ request });
-            // send event
-            await Event.fire('tramite::tracking', request, tramite);
-            Event.fire('tramite::new', request, tramite, auth.person, auth.person, dependencia); 
             // obtener folio
             let [file] = upload.files;
             let current_file = await File.find(file.id);
@@ -84,6 +81,9 @@ class TramiteController {
             // actualizar folio
             tramite.merge({ folio_count: pdfDoc.getPageCount() });
             await tramite.save();
+            // send event
+            await Event.fire('tramite::tracking', request, tramite);
+            Event.fire('tramite::new', request, tramite, auth.person, auth.person, dependencia); 
             // response
             return {
                 success: true,

@@ -42,7 +42,8 @@ const namedMiddleware = {
   allow: 'App/Middleware/Allow',
   jwt: 'App/Middleware/Jwt',
   entityId: 'App/Middleware/EntityProvider',
-  dependenciaId: 'App/Middleware/DependenciaProvider'
+  dependenciaId: 'App/Middleware/DependenciaProvider',
+  socket: 'App/Middleware/Socket',
 }
 
 /*

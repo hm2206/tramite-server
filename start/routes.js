@@ -4,7 +4,7 @@ const Route = require('../app/Services/route');
 
 // Tramite
 Route("get", "TramiteController.codeQr");
-Route("post", "TramiteController.store").middleware(['jwt', 'entityId', 'dependenciaId']);
+Route("post", "TramiteController.store").middleware(['jwt', 'entityId', 'dependenciaId', 'socket']);
 
 // Tipo de trámite
 Route("get", "TramiteTypeController.index");

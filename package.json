@@ -51,6 +51,7 @@
     "round-to": "^5.0.0",
     "slugify": "^1.4.4",
     "soap": "^0.33.0",
+    "socket.io-client": "^4.0.0",
     "strtotime": "^1.0.0",
     "uid": "^1.0.0",
     "validator-error": "^1.1.2",

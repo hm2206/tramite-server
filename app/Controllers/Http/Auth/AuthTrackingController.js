@@ -75,9 +75,10 @@ class AuthTrackingController {
 
     // executar
     handle = async ({ params, request }) => {
-        let { page, query_search, status } = request.all();
+        let { page, query_search, status, tracking_id } = request.all();
         let modos = `${params.modo}`.toUpperCase() == 'DEPENDENCIA' ? ['DEPENDENCIA'] : ['DEPENDENCIA', 'YO'];
         status = typeof status == undefined ? ['REGISTRADO'] : typeof status == 'string' ? [status] : status;
+        tracking_id = typeof tracking_id == undefined ? [] : [...tracking_id];
         // filtros
         let entity = request.$entity;
         let dependencia = request.$dependencia;
@@ -96,6 +97,7 @@ class AuthTrackingController {
             .where('trackings.dependencia_id', dependencia.id)
             .whereIn('modo', modos);
         // filtros
+        if (tracking_id.length) trackings.whereIn('trackings.id', tracking_id);
         if (modos.includes('YO')) trackings.where('trackings.user_verify_id', auth.id);
         if (status.length) trackings.whereIn('trackings.status', status);
         if (query_search) trackings.leftJoin('files as f', 'f.object_id', 'tra.id')

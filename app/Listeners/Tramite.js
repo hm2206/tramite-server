@@ -7,7 +7,8 @@ const NotFoundModelException = require('../Exceptions/NotFoundModelException')
 const CustomException = require('../Exceptions/CustomException');
 
 Tramite.createTramite = async (request, tramite, person, creado, dependencia) => {
-    await request.api_authentication.post('mail/to', {
+    // enviar correo
+    request.api_authentication.post('mail/to', {
         from: request.$system.email,
         email: person.email_contact,
         header: `Trámite ${tramite.dependencia_origen_id ? 'regístrado' : 'enviado'} correctamente`,
@@ -23,6 +24,7 @@ Tramite.createTramite = async (request, tramite, person, creado, dependencia) =>
 Tramite.tracking = async (request, tramite) => {
     let auth = request.$auth;
     let dependencia = request.$dependencia;
+    let socket = request.$io();
     let self_remitente = tramite.person_id == auth.person_id ? 1 : 0;
     let user_verify_id = auth.id;
     let next = request.input('next', "");
@@ -61,7 +63,7 @@ Tramite.tracking = async (request, tramite) => {
         }
     }
     // crear tracking
-    await Tracking.create({
+    let tracking = await Tracking.create({
         tramite_id: tramite.id,
         dependencia_id: dependencia.id,
         person_id: tramite.person_id,
@@ -77,4 +79,13 @@ Tramite.tracking = async (request, tramite) => {
         next: tramite.tramite_parent_id ? next : '',
         readed_at: null
     });
+    // enviar socket
+    socket.emit('Tramite/TramiteListener.store', { tramite, tracking });
+     // enviar notification
+    request.api_authentication.post(`auth/notification`, {
+        receive_id: tracking.user_verify_id,
+        title: `Nuevo trámite: ${tramite.slug}`,
+        description: `Se acabá de agregar un trámite a tu bandeja de entrada`,
+        method: request.$method,
+    }).catch(err => console.log(err));
 }
