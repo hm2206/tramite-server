@@ -137,7 +137,8 @@ class FileController {
         return {
             success: true,
             status: 201,
-            message: "El archivo se actualizó correctamente!"
+            message: "El archivo se actualizó correctamente!",
+            file
         };
     }
 
@@ -153,7 +154,8 @@ class FileController {
         return { 
             success: true,
             status: 201,
-            message: `El observación se guardo correctamente!`
+            message: `El observación se guardo correctamente!`,
+            file
         }
     }
 
