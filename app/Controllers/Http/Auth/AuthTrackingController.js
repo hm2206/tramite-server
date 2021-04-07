@@ -78,7 +78,7 @@ class AuthTrackingController {
         let { page, query_search, status, tracking_id } = request.all();
         let modos = `${params.modo}`.toUpperCase() == 'DEPENDENCIA' ? ['DEPENDENCIA'] : ['DEPENDENCIA', 'YO'];
         status = typeof status == undefined ? ['REGISTRADO'] : typeof status == 'string' ? [status] : status;
-        tracking_id = typeof tracking_id == undefined ? [] : [...tracking_id];
+        tracking_id = typeof tracking_id == undefined ? [] : tracking_id;
         // filtros
         let entity = request.$entity;
         let dependencia = request.$dependencia;
