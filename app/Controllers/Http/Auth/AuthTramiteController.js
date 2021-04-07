@@ -72,6 +72,7 @@ class AuthTramiteController {
         let auth = request.$auth;
         // obtener tracking
         let tracking = await Tracking.query()
+            .setHidden([])
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .with('verify')
             .with('tracking')

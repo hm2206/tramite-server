@@ -47,6 +47,12 @@
     "description": "Obtener tracking por identificador",
     "action_type": "VIEW"
   },
+  "TrackingController.update": {
+    "name": "TrackingController.update",
+    "url": "api/tracking/:id",
+    "description": "actualizar datos del tracking",
+    "action_type": "UPDATE"
+  },
   "TrackingController.multiple": {
     "name": "TrackingController.multiple",
     "url": "api/tracking/:id/multiple",

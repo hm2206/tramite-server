@@ -4,6 +4,7 @@ const Tracking = use('App/Models/Tracking');
 const File = use('App/Models/File');
 const collect = require('collect.js');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException')
+const { validation } = require('validator-error-adonis');
 
 class TrackingController {
 
@@ -104,6 +105,29 @@ class TrackingController {
             status: 201,
             tracking,
             multiples
+        }
+    }
+
+    // actualizar tracking
+    update = async ({ params, request }) => {
+        // validar datos
+        await validation(null, request.all(), {
+            description: "required|max:1000"
+        });
+        // obtener tracking
+        let tracking = await Tracking.find(params.id);
+        if (!tracking) throw NotFoundModelException("El seguímiento");
+        // actualizar
+        tracking.merge({ 
+            description: request.input('description', null)
+        });
+        await tracking.save();
+        // response
+        return {
+            success: true,
+            status: 201,
+            message: "Los cambios se guardarón correctamente!",
+            tracking
         }
     }
 

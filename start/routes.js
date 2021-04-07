@@ -16,6 +16,7 @@ Route("put", "TramiteTypeController.state").middleware(['jwt']);
 // Tracking
 Route("get", "TrackingController.show");
 Route("get", "TrackingController.multiple");
+Route("put", "TrackingController.update").middleware(["jwt"]);
 
 // Files
 Route("get", "FileController.handle", false);

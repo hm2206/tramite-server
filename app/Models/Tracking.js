@@ -7,7 +7,7 @@ const moment = require('moment');
 class Tracking extends Model {
 
     static get hidden () {
-        return ['visible'];
+        return ['visible', 'description'];
     }
 
     static get computed () {
@@ -48,7 +48,6 @@ class Tracking extends Model {
     info = () => {
         return this.belongsTo('App/Models/Info');
     }
-
 }
 
 module.exports = Tracking
