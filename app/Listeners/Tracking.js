@@ -4,8 +4,11 @@ const moment = require("moment");
 
 const Tracking = exports = module.exports = {}
 
-Tracking.verify = async (request, tramite) => {
+Tracking.verify = async (request, tramite, tracking) => {
     let auth = request.$auth;
+    let socket = request.$io();
+    // emitir socket
+    socket.emit('Tramite/TramiteListener.verify', tracking);
     // enviar email
     await request.api_authentication.post('mail/to', {
         from: request._system.email,
@@ -17,7 +20,7 @@ Tracking.verify = async (request, tramite) => {
             <b>Asunto:</b> ${tramite.asunto}
         `,
         subject: 'Trámite listo para ser derivado'
-    });
+    }).catch(err => console.log(err.message));
 }
 
 

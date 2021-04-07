@@ -26,7 +26,7 @@ Route("post", "FileController.observation").middleware(['jwt']);
 Route("post", "FileController.destroy").middleware(['jwt']);
 
 // Verificar
-Route("post", "VerifyController.handle").middleware(['jwt', 'entityId', 'dependenciaId']);
+Route("post", "VerifyController.handle").middleware(['jwt', 'entityId', 'dependenciaId', 'socket']);
 
 // Next
 Route("post", "NextController.handle").middleware(['jwt', 'entityId', 'dependenciaId']);
