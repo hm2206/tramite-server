@@ -4,7 +4,7 @@ const Tracking = use('App/Models/Tracking');
 const Tramite = use('App/Models/Tramite');
 const Role = use('App/Models/Role');
 const { validateAll } = use('Validator');
-const { Storage, validation, ValidatorError } = require('validator-error-adonis');
+const { validation, ValidatorError } = require('validator-error-adonis');
 const CustomException = require('../../Exceptions/CustomException');
 const FileController = require('./FileController');
 const moment = require('moment');
@@ -398,6 +398,8 @@ class NextController {
         await this._validateModo();
         // obtener tracking origen
         let origen = await Tracking.find(this.tracking.tracking_id);
+        let is_first = this.tracking.first ? true : false;
+        if (is_first) origen = this.tracking;
         if (!origen) throw new CustomException("No se encontró la dependencia de origen");
         // generar aceptado
         let payload_aceptado = {
@@ -408,12 +410,12 @@ class NextController {
             user_id: this.auth.id,
             tracking_id: this.tracking.id,
             revisado: 1,
-            visible: 1,
+            visible: is_first ? 0 : 1,
             current: 0,
             first: 0,
             modo: this.tracking.modo,
             status: 'ACEPTADO',
-            readed_at: null
+            readed_at: is_first ? moment().format('YYYY-MM-DD hh:mm:ss') : null,
         };
         // generar payload pendiente
         let payload_pendiente = Object.assign({}, payload_aceptado);
@@ -435,7 +437,9 @@ class NextController {
             payload_pendiente.tracking_id = aceptado.id;
             payload_pendiente.revisado = this.tracking.is_action ? 0 : 1;
             payload_pendiente.current = 1;
+            payload_pendiente.visible = 1;
             payload_pendiente.modo = this.tracking.modo;
+            payload_pendiente.readed_at = null;
             payload_pendiente.status = this.tracking.is_action ? 'PENDIENTE' : 'FINALIZADO';
             // crear pendiente
             let pendiente = await Tracking.create(payload_pendiente, this.trx);
@@ -460,6 +464,8 @@ class NextController {
         await this._validateModo();
         // obtener origen
         let origen = await Tracking.find(this.tracking.tracking_id);
+        let is_first = this.tracking.first;
+        if (is_first) origen = this.tracking;
         if (!origen) throw new CustomException("No se encontró la dependencia de origen");
         // generar pendiente
         let payload_pendiente = {
@@ -470,14 +476,14 @@ class NextController {
             user_id: this.auth.id,
             tracking_id: this.tracking.id,
             revisado: 0,
-            visible: 1,
+            visible: is_first ? 0 : 1,
             current: 1,
             first: 0,
             alert: 1,
             modo: this.tracking.modo,
             next: origen.next,
             status: 'PENDIENTE',
-            readed_at: null
+            readed_at: is_first ? moment().format('YYYY-MM-DD hh:mm:ss') : null,
         };
         // generar payload rechazado
         let payload_rechazado = Object.assign({}, payload_pendiente);
@@ -496,6 +502,7 @@ class NextController {
             payload_rechazado.user_verify_id = this.tracking.user_verify_id;
             payload_rechazado.tracking_id = pendiente.id;
             payload_rechazado.revisado = 1;
+            payload_rechazado.visible = 1;
             payload_rechazado.alert = 0;
             payload_rechazado.current = 0;
             payload_rechazado.next = null;
