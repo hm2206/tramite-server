@@ -1,21 +1,21 @@
 'use strict'
 
-const { validation, ValidatorError, Storage } = require('validator-error-adonis');
-const { validate } = use('Validator');
+const { validation, ValidatorError } = require('validator-error-adonis');
 const TramiteType = use('App/Models/TramiteType');
 const Tramite = use('App/Models/Tramite');
 const Tracking = use('App/Models/Tracking');
 const DependenciaExterior = use('App/Models/DependenciaExterior');
-const uid = require('uid')
-const Helpers = use('Helpers')
-const { LINK, URL } = require('../../../../utils')
+const uid = require('uid');
+const { URL } = require('../../../../utils')
+const FileController = require('../FileController');
+const CustomException = require('../../../Exceptions/CustomException');
 const collect = require('collect.js');
 const Event = use('Event');
-const Encryption = use('Encryption')
-const CodeVerify = use('App/Models/CodeVerify');
-const { addQrPdfEmbed } = require('../../../Services/addQrPdf');
+const { PDFDocument } = require('pdf-lib');
 const codeQR = require('qrcode');
+const File = use('App/Models/File');
 const Env = use('Env');
+const Drive = use('Drive');
 
 
 class TramitePublicController {
@@ -25,7 +25,7 @@ class TramitePublicController {
      * @param {*} param0 
      */
     store = async ({ request }) => {
-        await validation(validate, request.all(), {
+        await validation(null, request.all(), {
             entity_id: 'required',
             dependencia_id: 'required',
             person_id: "required",
@@ -33,10 +33,9 @@ class TramitePublicController {
             document_number: 'required|min:4|max:255',
             folio_count: 'required|min:1|max:10',
             asunto: 'required|min:4',
-            code: "required|min:8|max:8"
         });
         // obtener entity
-        let entity = await request.api_authentication.get(`entity/${request.input('entity_id')}`)
+        let { entity } = await request.api_authentication.get(`entity/${request.input('entity_id')}`)
             .then(res => res.data)
             .catch(err => ({
                 success: false,
@@ -70,67 +69,55 @@ class TramitePublicController {
         // obtener tramite documento
         let type = await TramiteType.find(request.input('tramite_type_id'));
         if (!type) throw new ValidatorError([{ field: 'tramite_type_id', message: 'EL tipo de tramite es incorrecto' }]);
-        // validar code verificación
-        let code_verify = await CodeVerify.query()
-            .where('person_id', person.id)
-            .where('is_revoked', 0)
-            .first();
-        if (!code_verify) throw new Error("El código de verificación no fué generado");
-        let code_raw = await Encryption.decrypt(code_verify.code);
-        if (code_raw != request.input('code')) throw new ValidatorError([{ field: 'code', message: 'El código es inválido' }])
         // generar slug
         let slug = `${type.short_name}${uid(10)}`.toUpperCase().substr(0, 10);
         // payload
         let payload = {
             entity_id: entity.id,
-            dependencia_id: dependencia.dependencia.id,
-            person_id: person.id,
+            person_id: request.input('person_id'),
             slug,
             document_number: request.input('document_number'),
             tramite_type_id: request.input('tramite_type_id'),
-            folio_count: request.input('folio_count'),
-            asunto: request.input('asunto')
+            folio_count: 0,
+            observation: request.input('observation'),
+            asunto: request.input('asunto'),
+            dependencia_origen_id: request.input('dependencia_id'),
+            tramite_parent_id: null,
+            user_id: null,
         }
-        // guardar file
-        let file = await Storage.saveFile(request, 'files', {
-            multifiles: true,
-            required: true,
-            size: '2mb',
-            extnames: ['pdf', 'docx']
-        }, Helpers, {
-            path: `/tramite/${slug}`,
-            options: {
-                overwrite: true 
-            }
-        })
-        // add files
-        let tmpFile = [];
-        // add files
-        for (let f of file.files) {
-            let newName = `code_qr_${f.name}`;
-            let arrayFile = `${f.path}`.split('/');
-            arrayFile.pop();
-            let newPath = await `${arrayFile.join('/')}/${newName}`;
-            let newLink = await LINK('tmp', newPath);
-            await addQrPdfEmbed(newPath, f.realPath, Encryption.encrypt({ slug, file: newLink }));
-            tmpFile.push(newLink);
-        }
-        // add file 
-        payload.files = JSON.stringify(await tmpFile);
         // guardar tramite
         let tramite = await Tramite.create(payload);
-        /// revokar code
-        code_verify.is_revoked = 1;
-        await code_verify.save();
-        // send event
-        Event.fire('tramite::new', request, tramite, person, person, dependencia.dependencia);
-        // response
-        return {
-            success: true,
-            status: 201,
-            code: 'RES_SUCCESS',
-            message: 'El tramite se creó correctamente',
-            tramite
+        // guardar archivos
+        try {
+            // preparar datos
+            let files = new FileController;
+            request.object_type = 'App/Models/Tramite';
+            request.object_id = tramite.id;
+            let upload = await files.store({ request });
+            // obtener folio
+            let [file] = upload.files;
+            let current_file = await File.find(file.id);
+            let embedPdf = await Drive.get(current_file.real_path);
+            let pdfDoc = await PDFDocument.load(embedPdf);
+            // actualizar folio
+            tramite.merge({ folio_count: pdfDoc.getPageCount() });
+            await tramite.save();
+            // send event
+            await Event.fire('tramite::tracking', request, tramite, true);
+            Event.fire('tramite::new', request, tramite, person, person, dependencia); 
+            // response
+            return {
+                success: true,
+                status: 201,
+                code: 'RES_SUCCESS',
+                message: 'El tramite se creó correctamente',
+                tramite
+            }
+        } catch (error) {
+            // eliminar tramite
+            await tramite.delete();
+            // ejecutar error
+            throw new CustomException(error.message, error.name, error.status || 501);
         }
     }
 

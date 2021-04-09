@@ -21,15 +21,18 @@ Tramite.createTramite = async (request, tramite, person, creado, dependencia) =>
     });
 }
 
-Tramite.tracking = async (request, tramite) => {
+Tramite.tracking = async (request, tramite, is_externo = false) => {
     let auth = request.$auth;
     let dependencia = request.$dependencia;
-    let socket = request.$io();
-    let self_remitente = tramite.person_id == auth.person_id ? 1 : 0;
-    let user_verify_id = auth.id;
+    let self_remitente = 0;
+    let user_verify_id = !is_externo ? auth.id : null;
     let next = request.input('next', "");
     let allow = ['RESPONDIDO'];
     let tracking_id = null;
+    // validar remitente
+    if (!is_externo) {
+        self_remitente = tramite.person_id == auth.person_id ? 1 : 0;
+    }
     // validar allow
     if (next && !allow.includes(next)) throw new CustomException(`la siguiente acción "${next}" no está permitida!`);
     // validar acción
@@ -65,27 +68,33 @@ Tramite.tracking = async (request, tramite) => {
     // crear tracking
     let tracking = await Tracking.create({
         tramite_id: tramite.id,
-        dependencia_id: dependencia.id,
+        dependencia_id: dependencia ? dependencia.id : tramite.dependencia_origen_id,
         person_id: tramite.person_id,
-        user_id: auth.id,
+        user_id: !is_externo ? auth.id : null,
         user_verify_id,
         current: 1,
         alert: 0,
         revisado: 0,
-        status: 'REGISTRADO',
+        status: is_externo ? 'ENVIADO' : 'REGISTRADO',
         modo: self_remitente ? 'YO' : 'DEPENDENCIA',
         first: 1,
         tracking_id,
         next: tramite.tramite_parent_id ? next : '',
         readed_at: null
     });
-    // enviar socket
-    socket.emit('Tramite/TramiteListener.store', { tramite, tracking });
-     // enviar notification
-    request.api_authentication.post(`auth/notification`, {
-        receive_id: tracking.user_verify_id,
-        title: `Nuevo trámite: ${tramite.slug}`,
-        description: `Se acabá de agregar un trámite a tu bandeja de entrada`,
-        method: request.$method,
-    }).catch(err => console.log(err));
+    // enviar socket cuando es interno
+    if (!is_externo) {
+        let socket = request.$io();
+        socket.emit('Tramite/TramiteListener.store', { tramite, tracking });
+        // enviar notification
+        request.api_authentication.post(`auth/notification`, {
+            receive_id: tracking.user_verify_id,
+            title: `Nuevo trámite: ${tramite.slug}`,
+            description: `Se acabá de agregar un trámite a tu bandeja de entrada`,
+            method: request.$method,
+        }).catch(err => console.log(err));
+    } else {
+        tramite.merge({ dependencia_origen_id: null });
+        await tramite.save();
+    };
 }

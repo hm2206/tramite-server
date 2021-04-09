@@ -142,5 +142,17 @@
     "url": "api/auth/tramite/:id/tracking",
     "description": "Obtener tramite en el estado actual segun dependencia y por id",
     "action_type": "VIEW"
+  },
+  "Public/TramitePublicController.store": {
+    "name": "public/TramitePublicController.store",
+    "url": "api/public/tramite",
+    "description": "Crear tramite externo",
+    "action_type": "CREATE"
+  },
+  "Public/DependenciaPublicController.show": {
+    "name": "Public/DependenciaPublicController.show",
+    "url": "api/public/dependencia/:entityId",
+    "description": "Obtener dependencia externa",
+    "action_type": "VIEW"
   }
 }

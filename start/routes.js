@@ -41,3 +41,7 @@ Route("get", "Auth/AuthTramiteController.index").middleware(['jwt', 'entityId', 
 Route("get", "Auth/AuthTramiteController.show").middleware(['jwt', 'entityId', 'dependenciaId']);
 Route("get", "Auth/AuthTrackingController.handle").middleware(['jwt', 'entityId', 'dependenciaId']);
 Route("get", "Auth/AuthStatusController.handle").middleware(['jwt', 'entityId', 'dependenciaId']);
+
+// public
+Route("post", "Public/TramitePublicController.store");
+Route("get", "Public/DependenciaPublicController.show");
