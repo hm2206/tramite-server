@@ -77,6 +77,18 @@
     "description": "Linéa de tiempo del trámite",
     "action_type": "CREATE"
   },
+  "RoleController.index": {
+    "name": "RoleController.index",
+    "url": "api/roles",
+    "description": "Lista de roles",
+    "action_type": "VIEW"
+  },
+  "RoleController.store": {
+    "name": "RoleController.store",
+    "url": "api/roles",
+    "description": "Crear rol",
+    "action_type": "CREATE"
+  },
   "FileController.store": {
     "name": "FileController.store",
     "url": "api/file",
