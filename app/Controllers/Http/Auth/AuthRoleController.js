@@ -5,12 +5,9 @@ const Role = use('App/Models/Role');
 class AuthRoleController {
     
     _getUser = async (request, id) => {
-        let { success, user } = await request.api_authentication.get(`user/${id}`)
+        let {  user } = await request.api_authentication.get(`user/${id}`)
         .then(res => res.data)
-        .catch(err => {
-            console.log(err);
-            return ({ success: false, user: {}})
-        });
+        .catch(err => ({ success: false, user: {}}));
         return user;
     }
 
@@ -22,6 +19,7 @@ class AuthRoleController {
             .where('dependencia_id', dependencia.id)
             .where('entity_id', entity.id)
             .where('user_id', auth.id)
+            .where('state', 1)
             .first();
         if (role) role.user = auth;
         // obtener jefe
@@ -29,6 +27,7 @@ class AuthRoleController {
             .where('dependencia_id', dependencia.id)
             .where('entity_id', entity.id)
             .where('level', 'BOSS')
+            .where('state', 1)
             .first();
         if (boss) boss.user = await this._getUser(request, boss.user_id)
         // response

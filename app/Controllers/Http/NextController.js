@@ -143,6 +143,7 @@ class NextController {
             .where('dependencia_id', dependencia_id)
             .where('entity_id', this.entity.id)
             .where('level', 'BOSS')
+            .where('state', 1)
             .first();
     }
 
