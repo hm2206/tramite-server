@@ -4,6 +4,7 @@ const Role = use('App/Models/Role');
 const collect = require('collect.js');
 const { validation } = require('validator-error-adonis');
 const DBException = require('../../Exceptions/DBException');
+const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
 
 class RoleController {
 
@@ -13,10 +14,12 @@ class RoleController {
         // config
         let entity = request.$entity;
         let dependencia = request.$dependencia;
+        let state = request.input('state', 1) ? 1 : 0;
         // obtener roles
         let roles = await Role.query()
             .where('entity_id', entity.id)
             .where('dependencia_id', dependencia.id)
+            .where('state', state)
             .paginate(page || 1, 20);
         roles = await roles.toJSON();
         // obtener users
@@ -65,6 +68,19 @@ class RoleController {
         } catch (error) {
             throw new DBException(error, "Rol");
         }     
+    }
+
+    disabled = async ({ params, request }) => {
+        let role = await Role.find(params.id);
+        if (!role) throw new NotFoundModelException("El rol");
+        role.merge({ state: 0 });
+        await role.save();
+        // response
+        return {
+            success: true,
+            status: 201,
+            message: "El rol se deshabilito correctamente!"
+        }
     }
 
     _getUsers = async (request, ids = []) => {

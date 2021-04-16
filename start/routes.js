@@ -29,6 +29,7 @@ Route("post", "FileController.destroy").middleware(['jwt']);
 // Roles
 Route("get", "RoleController.index").middleware(['jwt', 'entityId', 'dependenciaId']);
 Route("post", "RoleController.store").middleware(['jwt', 'entityId', 'dependenciaId']);
+Route("put", "RoleController.disabled").middleware(['jwt', 'entityId', 'dependenciaId']);
 
 // Verificar
 Route("post", "VerifyController.handle").middleware(['jwt', 'entityId', 'dependenciaId', 'socket']);

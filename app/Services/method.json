@@ -89,6 +89,12 @@
     "description": "Crear rol",
     "action_type": "CREATE"
   },
+  "RoleController.disabled": {
+    "name": "RoleController.disabled",
+    "url": "api/roles/:id/disabled",
+    "description": "Deshabilitar rol",
+    "action_type": "UPDATE"
+  },
   "FileController.store": {
     "name": "FileController.store",
     "url": "api/file",
