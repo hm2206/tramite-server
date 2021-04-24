@@ -1,4 +1,10 @@
 {
+  "ConfigDependenciaController.dependenciaDestino": {
+    "name": "ConfigDependenciaController.dependenciaDestino",
+    "url": "api/config_dependencias/:id/dependencia_destino",
+    "description": "Listar dependencia destino de una dependencia",
+    "action_type": "VIEW"
+  },
   "TramiteController.store": {
     "name": "TramiteController.store",
     "url": "api/tramite",
