@@ -22,6 +22,7 @@ class ConfigDependenciaController {
         // validar 
         let is_exists = await ConfigDependencia.query()
             .where('entity_id', entity.id)
+            .where('dependencia_id', dependencia.id)
             .where('dependencia_destino_id', payload.dependencia_destino_id)
             .getCount('id');
         if (is_exists) throw new ValidatorError([{ field: "dependencia_destino_id", message: "La dependencia destino ya existe" }]);
