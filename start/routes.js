@@ -3,7 +3,9 @@
 const Route = require('../app/Services/route');
 
 // Config Dependencia
+Route('post', 'ConfigDependenciaController.store').middleware(['jwt', 'entityId', 'dependenciaId']);
 Route('get', 'ConfigDependenciaController.dependenciaDestino').middleware(['jwt', 'entityId', 'dependenciaId']);
+Route('delete', 'ConfigDependenciaController.delete').middleware(['jwt', 'entityId', 'dependenciaId']);
 
 // Tramite
 Route("get", "TramiteController.codeQr");

@@ -1,4 +1,16 @@
 {
+  "ConfigDependenciaController.store": {
+    "name": "ConfigDependenciaController.store",
+    "url": "api/config_dependencias",
+    "description": "Crear configurar dependencia destino",
+    "action_type": "CREATE"
+  },
+  "ConfigDependenciaController.delete": {
+    "name": "ConfigDependenciaController.delete",
+    "url": "api/config_dependencias/:id",
+    "description": "Crear configurar dependencia destino",
+    "action_type": "DELETE"
+  },
   "ConfigDependenciaController.dependenciaDestino": {
     "name": "ConfigDependenciaController.dependenciaDestino",
     "url": "api/config_dependencias/:id/dependencia_destino",

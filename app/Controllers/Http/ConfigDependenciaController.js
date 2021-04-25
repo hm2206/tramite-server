@@ -3,8 +3,42 @@
 const ConfigDependencia = use('App/Models/ConfigDependencia');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
 const collect = require('collect.js');
+const DBException = require('../../Exceptions/DBException');
+const { ValidatorError, validation } = require('validator-error-adonis');
 
 class ConfigDependenciaController {
+
+    async store ({ request }) {
+        await validation(null, {
+            dependencia_destino_id: 'required'
+        });
+        let entity = request.$entity;
+        let dependencia = request.$dependencia;
+        let payload = {
+            entity_id: entity.id,
+            dependencia_id: dependencia.id,
+            dependencia_destino_id: request.input('dependencia_destino_id')
+        };
+        // validar 
+        let is_exists = await ConfigDependencia.query()
+            .where('entity_id', entity.id)
+            .where('dependencia_destino_id', payload.dependencia_destino_id)
+            .getCount('id');
+        if (is_exists) throw new ValidatorError([{ field: "dependencia_destino_id", message: "La dependencia destino ya existe" }]);
+        // guardar
+        try {
+            let config_dependencia = await ConfigDependencia.create(payload);
+            // response
+            return {
+                success: true,
+                status: 201,
+                message: "Los datos se guardarón correctamente!",
+                config_dependencia
+            }
+        } catch (error) {
+            throw new DBException("regístro")
+        }
+    }
 
     async dependenciaDestino ({ params, request }) {
         let id = params.id;
@@ -28,6 +62,28 @@ class ConfigDependenciaController {
             success: true,
             status: 201,
             dependencia_destinos: config_dependencias,
+        }
+    }
+
+    async delete ({ params, request }) {
+        let entity = request.$entity;
+        let dependencia = request.$dependencia;
+        try {
+            let config_dependencia = await ConfigDependencia.query()
+                .where('entity_id', entity.id)
+                .where('dependencia_id', dependencia.id)
+                .where('dependencia_destino_id', params.id)
+                .first();
+            await config_dependencia.delete();
+            // response
+            return {
+                success: true,
+                status: 201,
+                message: "La dependencia destino se elimino correctamente!"
+            }
+        } catch (error) {
+            console.log(error);
+            throw new Error("No se pudo eliminar la dependencia destino");
         }
     }
 
