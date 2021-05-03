@@ -15,89 +15,106 @@ const NotFoundModelException = require('../../Exceptions/NotFoundModelException'
 const { PDFDocument } = require('pdf-lib');
 const File = use('App/Models/File');
 const Drive = use('Drive');
+const TramiteEntity = require('../../Entities/TramiteEntity');
 
 class TramiteController {
 
     // crear tramite interno
     store = async ({ request }) => {
-        await validation(validateAll, request.all(), {
-            person_id: "required",
-            tramite_type_id: 'required|max:11',
-            document_number: 'required|min:4|max:255',
-            asunto: 'required|min:4'
-        });
-        // obtener tramite documento
-        let type = await TramiteType.find(request.input('tramite_type_id'));
-        if (!type) throw new ValidatorError([{ field: 'tramite_type_id', message: 'EL tipo de tramite es incorrecto' }]);
-        // generar slug
-        let slug = `${type.short_name}${uid(10)}`.toUpperCase().substr(0, 10);
-        let tramite_parent_id = null;
-        // obtener al auth y dependencia
-        let auth = request.$auth;
-        let entity = request.$entity;
-        let dependencia = request.$dependencia;
-        // verificar role
-        let role = await Role.query()
-            .where('entity_id', entity.id)
-            .where('dependencia_id', dependencia.id)
-            .where('level', 'BOSS')
-            .first();
-        if (!role) throw new NotFoundModelException("Al jefe");
-        // validar tramite parent
-        if (request.input('tramite_id')) {
-            let tramite_parent = await Tramite.find(request.input('tramite_id'));
-            if (!tramite_parent) throw new NotFoundModelException("El trámite raíz");
-            tramite_parent_id = tramite_parent.id;
-            slug = tramite_parent.slug;
+        const authentication = request.api_authentication;
+        const auth = request.$auth;
+        const entity = request.$entity;
+        const dependencia = request.$dependencia;
+        const tramiteEntity = new TramiteEntity(authentication);
+        const datos = request.all();
+        datos.entity_id = entity.id;
+        datos.dependencia_id = dependencia.id;
+        let tramite = await tramiteEntity.store(datos, auth);
+        // response
+        return {
+            success: true,
+            status: 201,
+            message: "El tramite se creó correctamente",
+            tramite
         }
-        // payload
-        let payload = {
-            entity_id: request.$entity.id,
-            person_id: request.input('person_id'),
-            slug,
-            document_number: request.input('document_number'),
-            tramite_type_id: request.input('tramite_type_id'),
-            folio_count: 0,
-            observation: request.input('observation'),
-            asunto: request.input('asunto'),
-            dependencia_origen_id: dependencia.id,
-            tramite_parent_id,
-            user_id: auth.id,
-        }
-        // guardar tramite
-        let tramite = await Tramite.create(payload);
-        // guardar archivos
-        try {
-            // preparar datos
-            let files = new FileController;
-            request.object_type = 'App/Models/Tramite';
-            request.object_id = tramite.id;
-            let upload = await files.store({ request });
-            // obtener folio
-            let [file] = upload.files;
-            let current_file = await File.find(file.id);
-            let embedPdf = await Drive.get(current_file.real_path);
-            let pdfDoc = await PDFDocument.load(embedPdf);
-            // actualizar folio
-            tramite.merge({ folio_count: pdfDoc.getPageCount() });
-            await tramite.save();
-            // send event
-            await Event.fire('tramite::tracking', request, tramite);
-            Event.fire('tramite::new', request, tramite, auth.person, auth.person, dependencia); 
-            // response
-            return {
-                success: true,
-                status: 201,
-                code: 'RES_SUCCESS',
-                message: 'El tramite se creó correctamente',
-                tramite
-            }
-        } catch (error) {
-            // eliminar tramite
-            await tramite.delete();
-            // ejecutar error
-            throw new CustomException(error.message, error.name, error.status || 501);
-        }
+        // await validation(validateAll, request.all(), {
+        //     person_id: "required",
+        //     tramite_type_id: 'required|max:11',
+        //     document_number: 'required|min:4|max:255',
+        //     asunto: 'required|min:4'
+        // });
+        // // obtener tramite documento
+        // let type = await TramiteType.find(request.input('tramite_type_id'));
+        // if (!type) throw new ValidatorError([{ field: 'tramite_type_id', message: 'EL tipo de tramite es incorrecto' }]);
+        // // generar slug
+        // let slug = `${type.short_name}${uid(10)}`.toUpperCase().substr(0, 10);
+        // let tramite_parent_id = null;
+        // // obtener al auth y dependencia
+        // let auth = request.$auth;
+        // let entity = request.$entity;
+        // let dependencia = request.$dependencia;
+        // // verificar role
+        // let role = await Role.query()
+        //     .where('entity_id', entity.id)
+        //     .where('dependencia_id', dependencia.id)
+        //     .where('level', 'BOSS')
+        //     .first();
+        // if (!role) throw new NotFoundModelException("Al jefe");
+        // // validar tramite parent
+        // if (request.input('tramite_id')) {
+        //     let tramite_parent = await Tramite.find(request.input('tramite_id'));
+        //     if (!tramite_parent) throw new NotFoundModelException("El trámite raíz");
+        //     tramite_parent_id = tramite_parent.id;
+        //     slug = tramite_parent.slug;
+        // }
+        // // payload
+        // let payload = {
+        //     entity_id: request.$entity.id,
+        //     person_id: request.input('person_id'),
+        //     slug,
+        //     document_number: request.input('document_number'),
+        //     tramite_type_id: request.input('tramite_type_id'),
+        //     folio_count: 0,
+        //     observation: request.input('observation'),
+        //     asunto: request.input('asunto'),
+        //     dependencia_origen_id: dependencia.id,
+        //     tramite_parent_id,
+        //     user_id: auth.id,
+        // }
+        // // guardar tramite
+        // let tramite = await Tramite.create(payload);
+        // // guardar archivos
+        // try {
+        //     // preparar datos
+        //     let files = new FileController;
+        //     request.object_type = 'App/Models/Tramite';
+        //     request.object_id = tramite.id;
+        //     let upload = await files.store({ request });
+        //     // obtener folio
+        //     let [file] = upload.files;
+        //     let current_file = await File.find(file.id);
+        //     let embedPdf = await Drive.get(current_file.real_path);
+        //     let pdfDoc = await PDFDocument.load(embedPdf);
+        //     // actualizar folio
+        //     tramite.merge({ folio_count: pdfDoc.getPageCount() });
+        //     await tramite.save();
+        //     // send event
+        //     await Event.fire('tramite::tracking', request, tramite);
+        //     Event.fire('tramite::new', request, tramite, auth.person, auth.person, dependencia); 
+        //     // response
+        //     return {
+        //         success: true,
+        //         status: 201,
+        //         code: 'RES_SUCCESS',
+        //         message: 'El tramite se creó correctamente',
+        //         tramite
+        //     }
+        // } catch (error) {
+        //     // eliminar tramite
+        //     await tramite.delete();
+        //     // ejecutar error
+        //     throw new CustomException(error.message, error.name, error.status || 501);
+        // }
     }
 
     // generar código QR
