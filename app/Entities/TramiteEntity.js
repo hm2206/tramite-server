@@ -1,6 +1,7 @@
 'use strict';
 
 const DB = use('Database');
+const Drive = use('Drive');
 const Tramite = use('App/Models/Tramite');
 const Tracking = use('App/Models/Tracking');
 const TramiteType = use('App/Models/TramiteType');
@@ -10,6 +11,9 @@ const CustomException = require('../Exceptions/CustomException');
 const { validation, ValidatorError } = require('validator-error-adonis');
 const uid = require('uid');
 const DBException = require('../Exceptions/DBException');
+const FileEntity = require('../Entities/FileEntity');
+const { collect } = require('collect.js');
+const { PDFDocument } = require('pdf-lib');
 
 class TramiteEntity {
 
@@ -32,7 +36,7 @@ class TramiteEntity {
         state: 1
     }
 
-    async store (datos = this.attributes, auth = {}, next = null) {
+    async store (request, datos = this.attributes, auth = {}, next = null) {
         // validaciones
         await validation(null, datos, {
             entity_id: "required",
@@ -138,14 +142,47 @@ class TramiteEntity {
             }
             // crear tracking
             let tracking = await Tracking.create(payload_tracking, trx);
-            tramite.tracking = tracking;
+            // guardar archivos
+            const fileEntity = new FileEntity();
+            let files = await fileEntity.store(request, { 
+                object_id: tramite.id, 
+                object_type: 'App/Models/Tramite',
+                extnames: ['pdf', 'docx']
+            }, `/tramite/${slug}_${tramite.id}`, trx);
             // guardar transacción
             trx.commit();
+            // obtener folio
+            let folio_count = await this.generateFolio(tramite, files);
+            if (folio_count) {
+                tramite.merge({ folio_count: folio_count });
+                await tramite.save();
+            }
+            // add 
+            tramite.tracking = tracking;
+            tramite.files = files;
+            // response
             return tramite;
         } catch (error) {
+            console.log(error);
             trx.rollback();
             throw new DBException("regístro");
         }
+    }
+
+    async generateFolio (tramite, files = []) {
+        let folio_count = 0;
+        let only_pdf = collect(files).where('extname', 'pdf').toArray();
+        for (let file of only_pdf) {
+            try {
+                let exists = await Drive.exists(file.real_path);
+                if (!exists) continue;
+                let current_pdf = await Drive.get(file.real_path);
+                let docPdf = await PDFDocument.load(current_pdf);  
+                folio_count += docPdf.getPageCount(); 
+            } catch (error) { }
+        }
+        // response
+        return folio_count;
     }
 
 }

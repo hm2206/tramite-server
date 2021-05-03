@@ -29,7 +29,8 @@ class TramiteController {
         const datos = request.all();
         datos.entity_id = entity.id;
         datos.dependencia_id = dependencia.id;
-        let tramite = await tramiteEntity.store(datos, auth);
+        let next = request.input('next');
+        let tramite = await tramiteEntity.store(request, datos, auth, next);
         // response
         return {
             success: true,

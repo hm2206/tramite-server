@@ -7,10 +7,6 @@ const roundTo = require('round-to');
 
 class File extends Model {
 
-    static get hidden () {
-        return ['real_path'];
-    }
-
     static get computed () {
         return ['size_kb'];
     }
