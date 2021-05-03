@@ -159,9 +159,10 @@ class TramiteEntity {
             }
             // add 
             tramite.tracking = tracking;
+            tramite.person = person;
             tramite.files = files;
             // response
-            return tramite;
+            return JSON.parse(JSON.stringify(tramite));
         } catch (error) {
             console.log(error);
             trx.rollback();
