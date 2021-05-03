@@ -112,7 +112,7 @@ class TrackingController {
     update = async ({ params, request }) => {
         // validar datos
         await validation(null, request.all(), {
-            description: "required|max:1000"
+            description: "max:1000"
         });
         // obtener tracking
         let tracking = await Tracking.find(params.id);
