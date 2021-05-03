@@ -42,7 +42,8 @@ class FileController {
         let file = await Storage.saveFile(request, "files", {
             multifiles: true,
             required: true,
-            size: Env.get('DRIVE_SIZE', '6mb')
+            size: Env.get('DRIVE_SIZE', '6mb'),
+            extnames: ['pdf', 'docx'],
         }, Helpers, {
             path: `${object_type.split('/').pop()}/${uid(10)}`.toLowerCase(),
             options: {

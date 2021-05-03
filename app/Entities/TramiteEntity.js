@@ -164,9 +164,8 @@ class TramiteEntity {
             // response
             return JSON.parse(JSON.stringify(tramite));
         } catch (error) {
-            console.log(error);
             trx.rollback();
-            throw new DBException("regístro");
+            throw new DBException(error, "regístro");
         }
     }
 
