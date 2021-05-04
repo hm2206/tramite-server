@@ -75,7 +75,7 @@ class AuthTrackingController {
 
     // executar
     handle = async ({ params, request }) => {
-        let { page, query_search, status, tracking_id } = request.all();
+        let { page, query_search, status, tracking_id, archived } = request.all();
         let modos = `${params.modo}`.toUpperCase() == 'DEPENDENCIA' ? ['DEPENDENCIA'] : ['DEPENDENCIA', 'YO'];
         status = typeof status == 'undefined' ? ['REGISTRADO'] : typeof status == 'string' ? [status] : status;
         tracking_id = !tracking_id ? [] : typeof tracking_id == 'string' ? [tracking_id] : tracking_id;
@@ -97,6 +97,7 @@ class AuthTrackingController {
             .where('trackings.dependencia_id', dependencia.id)
             .whereIn('modo', modos);
         // filtros
+        if (typeof archived != 'undefined') trackings.where('trackings.archived', archived ? 1 : 0)
         if (tracking_id.length) trackings.whereIn('trackings.id', tracking_id);
         if (modos.includes('YO')) trackings.where('trackings.user_verify_id', auth.id);
         if (status.length) trackings.whereIn('trackings.status', status);
@@ -107,7 +108,7 @@ class AuthTrackingController {
                 'trackings.dependencia_id', 'trackings.user_id', 'trackings.user_verify_id', 
                 'trackings.person_id', 'trackings.current', 'trackings.alert', 'trackings.revisado', 
                 'trackings.modo', 'trackings.visible', 'trackings.status', 'trackings.first', 
-                'trackings.state', 'trackings.readed_at'
+                'trackings.archived', 'trackings.state', 'trackings.readed_at'
             )
         // paginación
         trackings = await trackings.paginate(page || 1, 20);

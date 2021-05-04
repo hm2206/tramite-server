@@ -52,7 +52,7 @@ class TramiteEntity {
         // obtener persona
         let { person, success } = await this.authentication.get(`person/${datos.person_id || '_error'}`)
         .then(res => res.data)
-        .catch(() => ({ success: false }));
+        .catch(err => ({ success: false }));
         if (!success) throw new ValidatorError([{ field: 'person_id', message: `La persona no existe!` }]);
         // obtener tramite documento
         let type = await TramiteType.find(datos.tramite_type_id);
@@ -74,12 +74,13 @@ class TramiteEntity {
             user_id: isAuth ? auth.id : null,
         } 
         // verificar role
-        let role = await Role.query()
+        let boss = await Role.query()
             .where('entity_id', datos.entity_id)
             .where('dependencia_id', datos.dependencia_id)
             .where('level', 'BOSS')
+            .where('state', 1)
             .first();
-        if (!role) throw new NotFoundModelException("Al jefe");
+        if (!boss) throw new NotFoundModelException("Al jefe");
         // validar tramite parent
         if (datos.tramite_id) {
             let tramite_parent = await Tramite.find(request.input('tramite_id'));
@@ -115,13 +116,6 @@ class TramiteEntity {
             if (next && !allow.includes(next))  throw new CustomException(`la siguiente acción "${next}" no está permitida!`);
             // obtener boss
             if (!self_remitente) {
-                let boss = await Role.query()
-                    .where('entity_id', tramite.entity_id)
-                    .where('dependencia_id', tramite.dependencia_origen_id)
-                    .where('level', 'BOSS')
-                    .where('state', 1)
-                    .first();
-                if (!boss) throw new NotFoundModelException("al jefe");
                 // actualizar user_verify_id
                 payload_tracking.user_verify_id = boss.user_id;
             }

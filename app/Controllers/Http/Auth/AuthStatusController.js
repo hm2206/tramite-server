@@ -9,6 +9,7 @@ class AuthStatusController {
         let dependencia = request.$dependencia;
         let auth = request.$auth;
         let modo = `${request.input('modo', 'YO')}`.toUpperCase();
+        let archived = request.input('archived');
         // permitidos
         let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA', 'DERIVADO', 'ANULADO']);
         // select dinamico
@@ -24,6 +25,7 @@ class AuthStatusController {
                 .select(DB.raw(`count(tra.status)`))
             // validar yo
             if (modo == 'YO') raw_status.where('tra.user_verify_id', auth.id);
+            if (archived) raw_status.where('tra.archived', archived ? 1 : 0);
             // add select
             select_status.push(`(${raw_status}) as ${allow}`);
         });
