@@ -39,7 +39,7 @@ class VerifyController {
             .where('id', tracking.id)
             .update({ revisado: 1 });
         // notificar
-        await Event.fire("tracking::verify", request, tracking.tramite, tracking);
+        Event.fire("tracking::verify", request, tracking.tramite, tracking);
         // response
         return {
             success: true,

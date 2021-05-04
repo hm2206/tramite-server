@@ -71,6 +71,12 @@
     "description": "actualizar datos del tracking",
     "action_type": "UPDATE"
   },
+  "TrackingController.archived": {
+    "name": "TrackingController.archived",
+    "url": "api/tracking/:id/archived",
+    "description": "actualizar archived del tracking",
+    "action_type": "UPDATE"
+  },
   "TrackingController.multiple": {
     "name": "TrackingController.multiple",
     "url": "api/tracking/:id/multiple",

@@ -1,21 +1,14 @@
 'use strict'
 
 const { validation, ValidatorError } = require('validator-error-adonis');
-const TramiteType = use('App/Models/TramiteType');
 const Tramite = use('App/Models/Tramite');
 const Tracking = use('App/Models/Tracking');
 const DependenciaExterior = use('App/Models/DependenciaExterior');
-const uid = require('uid');
 const { URL } = require('../../../../utils')
-const FileController = require('../FileController');
-const CustomException = require('../../../Exceptions/CustomException');
 const collect = require('collect.js');
 const Event = use('Event');
-const { PDFDocument } = require('pdf-lib');
 const codeQR = require('qrcode');
-const File = use('App/Models/File');
 const Env = use('Env');
-const Drive = use('Drive');
 const TramiteEntity = require('../../../Entities/TramiteEntity');
 
 class TramitePublicController {
@@ -52,6 +45,8 @@ class TramitePublicController {
         // processar trámite
         const tramiteEntity = new TramiteEntity(authentication);
         const tramite = await tramiteEntity.store(request, datos, {}, null);
+        // enviar evento
+        Event.fire('tramite::new', request, tramite, tramite.person, tramite.person, dependencia);
         // response
         return {
             success: true,
