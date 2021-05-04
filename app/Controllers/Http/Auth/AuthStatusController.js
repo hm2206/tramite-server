@@ -9,7 +9,6 @@ class AuthStatusController {
         let dependencia = request.$dependencia;
         let auth = request.$auth;
         let modo = `${request.input('modo', 'YO')}`.toUpperCase();
-        let archived = request.input('archived');
         // permitidos
         let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA', 'DERIVADO', 'ANULADO']);
         // select dinamico
@@ -24,15 +23,25 @@ class AuthStatusController {
                 .whereNull('tra.readed_at')
                 .select(DB.raw(`count(tra.status)`))
             // validar yo
-            if (modo == 'YO') raw_status.where('tra.user_verify_id', auth.id);
-            if (archived) raw_status.where('tra.archived', archived ? 1 : 0);
+            if (modo == 'YO') raw_status.where('tra.user_verify_id', auth.id)
+                .where('tra.archived', 0);
             // add select
             select_status.push(`(${raw_status}) as ${allow}`);
         });
-        // find status
+        // obtener archivados
+        let [{ARCHIVED}] = await DB.table('trackings as tra')
+            .join('tramites as t', 't.id', 'tra.tramite_id')
+            .where('t.entity_id', entity.id)
+            .where('tra.dependencia_id', dependencia.id)
+            .whereIn('tra.status', allow_status)
+            .whereNull('tra.readed_at')
+            .where('tra.archived', 1)
+            .select(DB.raw(`count(tra.status) as ARCHIVED`));
+            // find status
         let tracking_status = await DB.table(DB.raw('DUAL'))
             .select(DB.raw(select_status.join(",")))
             .first();
+        tracking_status.ARCHIVED = ARCHIVED;
         // response
         return {
             success: true,
