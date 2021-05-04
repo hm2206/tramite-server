@@ -97,7 +97,7 @@ class AuthTrackingController {
             .where('trackings.dependencia_id', dependencia.id)
             .whereIn('modo', modos);
         // filtros
-        if (typeof archived != 'undefined') trackings.where('trackings.archived', archived ? 1 : 0)
+        if (typeof archived != 'undefined') trackings.where('trackings.archived', archived)
         if (tracking_id.length) trackings.whereIn('trackings.id', tracking_id);
         if (modos.includes('YO')) trackings.where('trackings.user_verify_id', auth.id);
         if (status.length) trackings.whereIn('trackings.status', status);
