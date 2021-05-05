@@ -32,12 +32,7 @@ class TramiteController {
         let socket = request.$io();
         socket.emit('Tramite/TramiteListener.store', { tramite, tracking: tramite.tracking });
         // enviar notification
-        authentication.post(`auth/notification`, {
-            receive_id: tramite.tracking.user_verify_id,
-            title: `Nuevo trámite: ${tramite.slug}`,
-            description: `Se acabá de agregar un trámite a tu bandeja de entrada`,
-            method: request.$method,
-        }).catch(err => console.log(err.response));
+        Event.fire('tramite::notification', request, tramite, tramite.tracking);
         // response
         return {
             success: true,
