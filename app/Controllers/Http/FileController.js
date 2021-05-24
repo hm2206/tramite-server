@@ -43,7 +43,7 @@ class FileController {
             multifiles: true,
             required: true,
             size: Env.get('DRIVE_SIZE', '6mb'),
-            extnames: ['pdf', 'docx'],
+            extnames: ['pdf', 'docx', 'doc', 'PDF', 'DOCX', 'DOC'],
         }, Helpers, {
             path: `${object_type.split('/').pop()}/${uid(10)}`.toLowerCase(),
             options: {
