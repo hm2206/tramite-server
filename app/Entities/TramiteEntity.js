@@ -39,6 +39,7 @@ class TramiteEntity {
     async store (request, datos = this.attributes, auth = {}, next = null) {
         // validaciones
         await validation(null, datos, {
+            slug: "required|max:10|min:10",
             entity_id: "required",
             dependencia_id: "required",
             person_id: "required",
@@ -58,7 +59,7 @@ class TramiteEntity {
         let type = await TramiteType.find(datos.tramite_type_id);
         if (!type) throw new ValidatorError([{ field: 'tramite_type_id', message: 'EL tipo de documento es incorrecto' }]);
         // generar slug
-        let slug = `${type.short_name}${uid(10)}`.toUpperCase().substr(0, 10);
+        let slug = `${datos.slug}`.toUpperCase().substr(0, 10);
         // preparar datos
         let payload = {
             entity_id: datos.entity_id,
@@ -142,7 +143,7 @@ class TramiteEntity {
                 object_id: tramite.id, 
                 object_type: 'App/Models/Tramite',
                 extnames: ['pdf', 'docx', 'doc', 'DOCX', 'DOC', 'PDF']
-            }, `/tramite/${slug}_${tramite.id}`, trx);
+            }, `/tramite/${slug}`, trx);
             // guardar transacción
             trx.commit();
             // obtener folio

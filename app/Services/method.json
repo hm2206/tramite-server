@@ -127,7 +127,7 @@
   },
   "FileController.handle": {
     "name": "FileController.handle",
-    "url": "file",
+    "url": "api/file",
     "description": "Mostrar archivo",
     "action_type": "VIEW"
   },
