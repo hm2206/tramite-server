@@ -38,7 +38,9 @@ class FileEntity {
             extnames: info.extnames,
         }, Helpers, {
             path: current_path,
-            options: {}
+            options: {
+                overwrite: true
+            }
         });
         // preparar datos
         let payload = [];

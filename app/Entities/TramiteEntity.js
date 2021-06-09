@@ -50,6 +50,11 @@ class TramiteEntity {
         // validar dependencias
         const isAuth = Object.keys(auth || {}).length;
         const self_remitente = isAuth ? auth.person_id == datos.person_id : false;
+        // generar slug
+        let slug = `${datos.slug}`.toUpperCase();
+        // validar slug
+        const existSlug = await Tramite.findBy('slug', slug);
+        if (existSlug) throw new Error("El código autogenerado ya existe!!!");
         // obtener persona
         let { person, success } = await this.authentication.get(`person/${datos.person_id || '_error'}`)
         .then(res => res.data)
@@ -58,8 +63,6 @@ class TramiteEntity {
         // obtener tramite documento
         let type = await TramiteType.find(datos.tramite_type_id);
         if (!type) throw new ValidatorError([{ field: 'tramite_type_id', message: 'EL tipo de documento es incorrecto' }]);
-        // generar slug
-        let slug = `${datos.slug}`.toUpperCase().substr(0, 10);
         // preparar datos
         let payload = {
             entity_id: datos.entity_id,
