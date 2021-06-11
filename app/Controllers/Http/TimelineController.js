@@ -105,7 +105,8 @@ class TimelineController {
         let tramite_id = db.pluck('tramite_id').toArray();
         let ids = collect([
             ...tracking_id,
-            ...tramite_id
+            ...tramite_id,
+            tramite.id,
         ]).toArray();
         let files = await File.query()
             .whereIn('object_type', ['App/Models/Tramite', 'App/Models/Tracking'])
