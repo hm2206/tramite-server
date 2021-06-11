@@ -11,6 +11,8 @@ const Env = use('Env');
 const File = use('App/Models/File');
 const Drive = use('Drive');
 const TramiteEntity = require('../../Entities/TramiteEntity');
+const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
+const Tracking = use('App/Models/Tracking');
 
 class TramiteController {
 
@@ -58,6 +60,44 @@ class TramiteController {
                 status: error.status || 501,
                 message: error.message
             })
+        }
+    }
+
+    // anular tramite
+    async anularProcess ({ params, request }) {
+        let auth = request.$auth;
+        let tramite = await Tramite.query() 
+            .where('person_id', auth.person_id)
+            .where('id', params.id)
+            .where('state', 1)
+            .first();
+        if (!tramite) throw new NotFoundModelException("El trámite");
+        // deshabilitar trámite
+        tramite.merge({ state: 0 });
+        await tramite.save();
+        // generar columna de eliminado y ocultar tracking
+        await Tracking.query()
+            .where('tramite_id', tramite.id)
+            .update({ current: 0, visible: 0 });
+        // crear registro de anulación
+        let tracking = await Tracking.create({
+            tramite_id: tramite.id,
+            dependencia_id:  tramite.dependencia_origen_id,
+            person_id: auth.person_id,
+            user_verify_id: auth.id,
+            user_id: auth.id,
+            revisado: 1,
+            visible: 1,
+            current: 1,
+            modo: 'YO',
+            status: 'ANULADO'
+        });
+        // response
+        return {
+            success: true,
+            status: 201,
+            message: "El proceso del trámite se anuló correctamente!",
+            tracking
         }
     }
 }

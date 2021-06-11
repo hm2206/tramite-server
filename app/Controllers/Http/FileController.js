@@ -38,6 +38,11 @@ class FileController {
         let Object = use(object_type);
         let obj = request.object_file ? request.object_file : await Object.find(object_id, trx);
         if (!obj) throw new NotFoundModelException("El objecto");
+        let folder = `${object_type.split('/').pop()}`.toLowerCase();
+        let dir = uid(10);
+        if (catchRequest.object_type == 'App/Models/Tramite') {
+            dir = obj.slug;
+        }
         // archivo
         let file = await Storage.saveFile(request, "files", {
             multifiles: true,
@@ -45,7 +50,7 @@ class FileController {
             size: Env.get('DRIVE_SIZE', '6mb'),
             extnames: ['pdf', 'docx', 'doc', 'PDF', 'DOCX', 'DOC'],
         }, Helpers, {
-            path: `${object_type.split('/').pop()}/${uid(10)}`.toLowerCase(),
+            path: `${folder}/${dir}`,
             options: {
                 overwrite: true
             }

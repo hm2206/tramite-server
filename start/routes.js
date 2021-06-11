@@ -10,6 +10,7 @@ Route('delete', 'ConfigDependenciaController.delete').middleware(['jwt', 'entity
 // Tramite
 Route("get", "TramiteController.codeQr");
 Route("post", "TramiteController.store").middleware(['jwt', 'entityId', 'dependenciaId', 'socket']);
+Route("post", "TramiteController.anularProcess").middleware('jwt');
 
 // Tipo de trámite
 Route("get", "TramiteTypeController.index");

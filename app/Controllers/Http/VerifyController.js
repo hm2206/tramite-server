@@ -13,11 +13,12 @@ class VerifyController {
         let auth = request.$auth;
         let entity = request.$entity;
         let dependencia = request.$dependencia;
+        let revisado = request.input('revisado') ? 1 : 0;
         let tracking = await Tracking.query()
             .with('tramite')
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .where('trackings.id', params.id)
-            .where('trackings.revisado', 0)
+            .where('trackings.revisado', revisado ? 0 : 1)
             .where('trackings.dependencia_id', dependencia.id)
             .where('tra.entity_id', entity.id)
             .select('trackings.*')
@@ -37,7 +38,7 @@ class VerifyController {
         // actualizar tracking
         await Tracking.query()
             .where('id', tracking.id)
-            .update({ revisado: 1 });
+            .update({ revisado });
         // notificar
         Event.fire("tracking::verify", request, tracking.tramite, tracking);
         // response

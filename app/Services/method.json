@@ -29,6 +29,12 @@
     "description": "Mostrar código QR",
     "action_type": "VIEW"
   },
+  "TramiteController.anularProcess": { 
+    "name": "TramiteController.anularProcess",
+    "url": "api/tramite/:id/anular_process",
+    "description": "Anular proceso de trámite",
+    "action_type": "CREATE"
+  },
   "TramiteTypeController.index": {
     "name": "TramiteTypeController.index",
     "url": "api/tramite_type",
