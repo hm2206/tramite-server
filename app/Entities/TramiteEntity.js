@@ -134,6 +134,7 @@ class TramiteEntity {
                 // finalizar tracking
                 let allow_over = ['RESPONDIDO'];
                 if (allow_over.includes(next)) {
+                    payload_tracking.tracking_id = before_tracking.tracking_id;
                     before_tracking.merge({ current: 0, status: 'FINALIZADO' });
                     await before_tracking.save();
                 }
