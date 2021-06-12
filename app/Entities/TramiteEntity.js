@@ -168,6 +168,37 @@ class TramiteEntity {
         }
     }
 
+    async update (id, datos = this.attributes, user_id = 0) {
+        await validation(null, datos, {
+            asunto: 'required|max:255',
+            tramite_type_id: 'required',
+            folio_count: 'required|number',
+            observation: 'max:1000'
+        });
+        // obtener trámite
+        let tramite = await Tramite.query() 
+            .join('trackings as tra', 'tra.tramite_id', 'tramites.id')
+            .where('tramites.id', id)
+            .where('tramites.state', 1)
+            .select('tramites.*', 'tra.status', 'tra.user_id', 'tra.user_verify_id')
+            .first();
+        if (!tramite) throw new NotFoundModelException("El trámite");
+        // validar actualización
+        if (user_id) {
+            if (tramite.user_id != user_id && tramite.user_verify_id != user_id) throw new CustomException("Usted no está permitido a guardar los cambios del trámite");
+        }
+        // preparar datos
+        tramite.merge({ 
+            asunto: datos.asunto,
+            tramite_type_id: datos.tramite_type_id,
+            folio_count: datos.folio_count,
+            observation: datos.observation
+        })
+        // guardar
+        await  tramite.save();
+        return tramite;
+    }
+
     async generateFolio (tramite, files = []) {
         let folio_count = 0;
         let only_pdf = collect(files).where('extname', 'pdf').toArray();

@@ -35,6 +35,12 @@
     "description": "Anular proceso de trámite",
     "action_type": "CREATE"
   },
+  "TramiteController.update": {
+    "name": "TramiteController.update",
+    "url": "api/tramite/:id",
+    "description": "Actualizar datos del trámite",
+    "action_type": "UPDATE"
+  },
   "TramiteTypeController.index": {
     "name": "TramiteTypeController.index",
     "url": "api/tramite_type",

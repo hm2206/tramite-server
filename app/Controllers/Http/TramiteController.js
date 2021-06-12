@@ -100,6 +100,19 @@ class TramiteController {
             tracking
         }
     }
+
+    async update ({ params, request }) {
+        let datos = request.all();
+        let auth = request.$auth;
+        let tramiteEntity = new TramiteEntity();
+        let tramite = await tramiteEntity.update(params.id, datos, auth.id);
+        return {
+            success: true,
+            status: 201,
+            message: "El trámite se actulizó correctamente!",
+            tramite
+        }
+    }
 }
 
 module.exports = TramiteController
