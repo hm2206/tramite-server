@@ -42,7 +42,7 @@ class TramitePublicController {
             .where('entity_id', entity.id)
             .where('dependencia_id', dependencia.id)
             .getCount();
-        // if (!is_allow) throw new ValidatorError([{ field: 'dependencia_id', message: 'La dependencia no está permitida' }]);
+        if (!is_allow) throw new ValidatorError([{ field: 'dependencia_id', message: 'La dependencia no está permitida' }]);
         // processar trámite
         datos.slug = uid(10);
         const tramiteEntity = new TramiteEntity(authentication);
