@@ -45,6 +45,8 @@ class TramitePublicController {
         if (!is_allow) throw new ValidatorError([{ field: 'dependencia_id', message: 'La dependencia no está permitida' }]);
         // processar trámite
         datos.slug = uid(10);
+        console.log(datos);
+        return { success: false };
         const tramiteEntity = new TramiteEntity(authentication);
         const tramite = await tramiteEntity.store(request, datos, {}, null);
         // enviar evento
