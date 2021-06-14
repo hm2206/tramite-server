@@ -43,6 +43,7 @@ class NextController {
             .where('trackings.dependencia_id', this.dependencia.id)
             .where('trackings.id', params.id)
             .where('trackings.current', 1)
+            .orderBy('trackings.id', 'DESC')
             .select('trackings.*')
             .first();
         // validar
@@ -133,7 +134,7 @@ class NextController {
         if (this.tracking.modo == 'DEPENDENCIA') {
             if (!this.role) throw new CustomException("Usted no puede realizar la acción");
         } else {
-            if (this.tracking.user_verify_id != this.auth.id) throw new CustomException("Usted no es el protietario del seguímiento!");
+            if (this.tracking.user_verify_id != this.auth.id) throw new CustomException("Usted no es el propietario del seguímiento!");
         }
     }
 
@@ -225,7 +226,7 @@ class NextController {
             status: this._actionStatus(),
             readed_at: null
         }
-        // validar tramite interno
+        // verificar que el tramite vaya a otra oficina
         if (!self_dependencia) {
             let current_boss = await this._getBoss(payload_recibido.dependencia_id);
             if (!current_boss) throw new CustomException("No se puede derivar a la dependencia por que no cuenta con un jefe");
@@ -290,7 +291,7 @@ class NextController {
             if (!this.role) throw new CustomException("Usted no cuenta con un rol para derivar el trámite fuera de la dependencia");
         }
         // validar request
-        await validation(validateAll, request.all(), rules);
+        await validation(null, request.all(), rules);
         // validar user
         if (self_dependencia && this.auth.id == request.input('user_destino_id'))  
             throw new ValidatorError([{ field: 'user_destino_id', message: 'Usted no puede ser el usuario destino' }]);
@@ -308,9 +309,10 @@ class NextController {
             first: 0,
             status: this._actionStatus(),
             is_action: this.is_action,
-            readed_at: null
+            readed_at: null,
+            modo: 'YO'
         }
-        // validar tramite interno
+        // verificar si el trámite sale de la dependencia
         if (!self_dependencia) {
             let current_boss = await this._getBoss(payload_recibido.dependencia_id);
             if (!current_boss) throw new CustomException("No se puede derivar a la dependencia por que no cuenta con un jefe");
