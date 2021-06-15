@@ -13,6 +13,7 @@ const { collect } = require('collect.js');
 const Info = use('App/Models/Info');
 const DB = use('Database');
 const File = use('App/Models/File');
+const Drive = use('Drive');
 
 class NextController {
 
@@ -265,7 +266,9 @@ class NextController {
             // generar copia
             await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
             // guardar cambios
-            this.trx.commit();
+            await this.trx.commit();
+            // eliminar archivos
+            await this._deleteFilesNotPdf();
             // config tracking
             return derivado;
         } catch (error) {
@@ -704,6 +707,25 @@ class NextController {
         }
         // response error
         return null;
+    }
+
+    // eliminar archivos de no seán de pdf
+    async _deleteFilesNotPdf () {
+        let files = await File.query()
+            .where('object_type', 'App/Models/Tramite')
+            .where('object_id', this.tracking.tramite_id)
+            .whereIn('extname', ['docx', 'doc'])
+            .fetch();
+        files = await files.toJSON();
+        // eliminamos archivo del storage
+        for (let file of files) {
+            let existsFile = await Drive.exists(file.real_path);
+            if (existsFile) await Drive.delete(file.real_path);
+            // eliminar regístro
+            await File.query()
+                .where('id', file.id)
+                .delete()
+        }
     }
 }
 
