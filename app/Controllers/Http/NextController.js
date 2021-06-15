@@ -141,12 +141,14 @@ class NextController {
 
     // obtener al boss
     _getBoss = async (dependencia_id) => {
-        return await Role.query()
+        let boss = await Role.query()
             .where('dependencia_id', dependencia_id)
             .where('entity_id', this.entity.id)
             .where('level', 'BOSS')
             .where('state', 1)
             .first();
+        if (!boss) throw new NotFoundModelException("Al jefe");
+        return boss;
     }
 
     // manejador
@@ -191,6 +193,14 @@ class NextController {
         return this.is_action ? status_default : 'COPIA';
     }
 
+    async _selfBoss (self_dependencia = false) {
+        if (this.role && this.boss &&  (this.role.user_id && this.boss.user_id)) return true;
+        if (!self_dependencia && this.boss.user_id != this.auth.id) {
+            if (this.tracking.modo != 'DEPENDENCIA') throw new CustomException("Usted no puede derivar el trámite fuera de la dependencia");
+            if (!this.role) throw new CustomException("Usted no cuenta con un rol para derivar el trámite fuera de la dependencia");
+        }
+    }
+
     _enviado = async ({ params, request }) => {
         let rules = {
             dependencia_destino_id: "required"
@@ -202,10 +212,7 @@ class NextController {
         let self_dependencia = this.dependencia.id == request.input('dependencia_destino_id') ? 1 : 0;
         if (self_dependencia) rules.user_destino_id = 'required';
         // validar salida del documento
-        if (!self_dependencia && this.boss.user_id != this.auth.id) {
-            if (this.tracking.modo != 'DEPENDENCIA') throw new CustomException("Usted no puede derivar el trámite fuera de la dependencia");
-            if (!this.role) throw new CustomException("Usted no cuenta con un rol para derivar el trámite fuera de la dependencia");
-        }
+        await this._selfBoss(self_dependencia);
         // validar request
         await validation(validateAll, request.all(), rules);
         // validar user
@@ -225,14 +232,16 @@ class NextController {
             first: 0,
             is_action: this.is_action,
             status: this._actionStatus(),
-            readed_at: null
+            readed_at: null,
+            modo: 'YO'
         }
+        // obtener jefes de la oficina origen
+        let boss_origen = await this._getBoss(this.tracking.dependencia_id);
+        let boss_destino = await this._getBoss(payload_recibido.dependencia_id);
         // verificar que el tramite vaya a otra oficina
         if (!self_dependencia) {
-            let current_boss = await this._getBoss(payload_recibido.dependencia_id);
-            if (!current_boss) throw new CustomException("No se puede derivar a la dependencia por que no cuenta con un jefe");
             // obtener user
-            let current_user = await this._getUser({ id: current_boss.user_id, request });
+            let current_user = await this._getUser({ id: boss_destino.user_id, request });
             payload_recibido.user_verify_id = current_user.id;
             payload_recibido.modo = 'DEPENDENCIA';
             payload_recibido.person_id = current_user.person_id;
@@ -241,6 +250,8 @@ class NextController {
             // obtener los datos
             let current_user = await this._getUser({ id: payload_recibido.user_verify_id, request });
             payload_recibido.person_id = current_user.person_id;
+            // verificar si el documento va dirigido al jefe
+            if (boss_destino.user_id == payload_recibido.user_verify_id) payload_recibido.modo = 'DEPENDENCIA';
         }
         // crear derivado
         let payload_derivado = Object.assign({}, payload_recibido);
@@ -249,6 +260,10 @@ class NextController {
         payload_derivado.person_id = this.tracking.person_id;
         payload_derivado.current = 0;
         payload_derivado.status = 'ENVIADO';
+        payload_derivado.modo = 'YO';
+        // cambiar derivado
+        if (payload_derivado.user_verify_id == boss_origen.user_id) payload_derivado.modo = 'DEPENDENCIA';
+        // processar trámite
         try {
             // obtener info
             await this._info({ request, onlyDescription: false }, (info) => {
@@ -289,10 +304,7 @@ class NextController {
         let self_dependencia = this.dependencia.id == request.input('dependencia_destino_id') ? 1 : 0;
         if (self_dependencia) rules.user_destino_id = 'required';
         // validar salida del documento
-        if (!self_dependencia && this.boss.user_id != this.auth.id) {
-            if (this.tracking.modo != 'DEPENDENCIA') throw new CustomException("Usted no puede derivar el trámite fuera de la dependencia");
-            if (!this.role) throw new CustomException("Usted no cuenta con un rol para derivar el trámite fuera de la dependencia");
-        }
+        await this._selfBoss(self_dependencia);
         // validar request
         await validation(null, request.all(), rules);
         // validar user
@@ -315,12 +327,13 @@ class NextController {
             readed_at: null,
             modo: 'YO'
         }
+        // obtener jefes de las oficinas
+        let boss_origen = await this._getBoss(this.tracking.dependencia_id);
+        let boss_destino = await this._getBoss(payload_recibido.dependencia_id);
         // verificar si el trámite sale de la dependencia
         if (!self_dependencia) {
-            let current_boss = await this._getBoss(payload_recibido.dependencia_id);
-            if (!current_boss) throw new CustomException("No se puede derivar a la dependencia por que no cuenta con un jefe");
             // obtener user
-            let current_user = await this._getUser({ id: current_boss.user_id, request });
+            let current_user = await this._getUser({ id: boss_destino.user_id, request });
             payload_recibido.user_verify_id = current_user.id;
             payload_recibido.modo = 'DEPENDENCIA';
             payload_recibido.person_id = current_user.person_id;
@@ -329,6 +342,8 @@ class NextController {
             // obtener los datos
             let current_user = await this._getUser({ id: payload_recibido.user_verify_id, request });
             payload_recibido.person_id = current_user.person_id;
+            // verificar si el documento va dirigido al jefe
+            if (boss_destino.user_id == payload_recibido.user_verify_id) payload_recibido.modo = 'DEPENDENCIA';
         }
         // crear derivado
         let payload_derivado = Object.assign({}, payload_recibido);
@@ -337,6 +352,10 @@ class NextController {
         payload_derivado.person_id = this.tracking.person_id;
         payload_derivado.current = 0;
         payload_derivado.status = 'DERIVADO';
+        payload_derivado.modo = 'DEPENDENCIA';
+        // cambiar derivado
+        if (payload_derivado.user_verify_id == boss_origen.user_id) payload_derivado.modo = 'DEPENDENCIA';
+        // processar trámite
         try {
             // obtener info
             await this._info({ request, onlyDescription: false }, (info) => {
@@ -419,10 +438,14 @@ class NextController {
             visible: is_first ? 0 : 1,
             current: 0,
             first: 0,
-            modo: this.tracking.modo,
+            modo: 'YO',
             status: 'ACEPTADO',
             readed_at: is_first ? moment().format('YYYY-MM-DD hh:mm:ss') : null,
         };
+        // obtener jefe del area del documento
+        let boss_origen = await this._getBoss(this.tracking.dependencia_id);
+        let boss_destino = await this._getBoss(payload_aceptado.dependencia_id);
+        if (boss_destino.user_id == payload_aceptado.user_verify_id) payload_aceptado.modo = 'DEPENDENCIA';
         // generar payload pendiente
         let payload_pendiente = Object.assign({}, payload_aceptado);
         // procesar datos
@@ -444,9 +467,11 @@ class NextController {
             payload_pendiente.revisado = this.tracking.is_action ? 0 : 1;
             payload_pendiente.current = 1;
             payload_pendiente.visible = 1;
-            payload_pendiente.modo = this.tracking.modo;
             payload_pendiente.readed_at = null;
             payload_pendiente.status = this.tracking.is_action ? 'PENDIENTE' : 'FINALIZADO';
+            payload_pendiente.modo = 'YO';
+            // validar dependencia actual
+            if (payload_pendiente.user_verify_id == boss_origen.user_id) payload_pendiente.modo = 'DEPENDENCIA';
             // crear pendiente
             let pendiente = await Tracking.create(payload_pendiente, this.trx);
             // deshabilitar tracking
@@ -486,11 +511,15 @@ class NextController {
             current: 1,
             first: 0,
             alert: 1,
-            modo: this.tracking.modo,
+            modo: 'YO',
             next: origen.next,
             status: 'PENDIENTE',
             readed_at: is_first ? moment().format('YYYY-MM-DD hh:mm:ss') : null,
         };
+        // obtener jefe del area del documento
+        let boss_origen = await this._getBoss(this.tracking.dependencia_id);
+        let boss_destino = await this._getBoss(payload_pendiente.dependencia_id);
+        if (boss_destino.user_id == payload_pendiente.user_verify_id) payload_pendiente.modo = 'DEPENDENCIA';
         // generar payload rechazado
         let payload_rechazado = Object.assign({}, payload_pendiente);
         // procesar tracking
@@ -513,6 +542,9 @@ class NextController {
             payload_rechazado.current = 0;
             payload_rechazado.next = null;
             payload_rechazado.status = 'RECHAZADO';
+            payload_rechazado.modo = 'YO';
+            // validar dependencia actual
+            if (payload_rechazado.user_verify_id == boss_origen.user_id) payload_rechazado.modo = 'DEPENDENCIA';
             // crear rechazado
             let rechazado = await Tracking.create(payload_rechazado, this.trx);
             // deshabilitar tracking
