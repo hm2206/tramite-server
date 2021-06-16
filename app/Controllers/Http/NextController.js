@@ -276,20 +276,19 @@ class NextController {
             payload_derivado.tracking_id = recibido.id;
             // crear derivado
             let derivado = await Tracking.create(payload_derivado, this.trx);
-            // deshabilitar tracking actual
-            this._disableTrackingCurrent();
             // generar copia
             await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
             // guardar cambios
             await this.trx.commit();
+            // disabled visible
+            await this._disabledVisible([payload_derivado.dependencia_id, payload_recibido.dependencia_id], [recibido.id, derivado.id]);
             // eliminar archivos
             await this._deleteFilesNotPdf();
             // config tracking
             return derivado;
         } catch (error) {
             // cancelar cambios
-            this.tracking.merge({ visible: 1, current: 1 });
-            await this.tracking.save();
+            await this._rollbackTracking();
             this.trx.rollback();
             throw new CustomException("No se pudó procesar la acción");
         }
@@ -368,18 +367,17 @@ class NextController {
             payload_derivado.tracking_id = recibido.id;
             // crear derivado
             let derivado = await Tracking.create(payload_derivado, this.trx);
-            // deshabilitar tracking actual
-            this._disableTrackingCurrent();
             // generar copia
             await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
             // guardar cambios
             this.trx.commit();
+            // disabled visible
+            await this._disabledVisible([derivado.dependencia_id, recibido.dependencia_id], [recibido.id, derivado.id]);
             // config tracking
             return derivado;
         } catch (error) {
             // cancelar cambios
-            this.tracking.merge({ visible: 1, current: 1 });
-            await this.tracking.save();
+            await this._disabledVisible();
             this.trx.rollback();
             throw new CustomException("No se pudó procesar la acción");
         }
@@ -474,16 +472,15 @@ class NextController {
             if (payload_pendiente.user_verify_id == boss_origen.user_id) payload_pendiente.modo = 'DEPENDENCIA';
             // crear pendiente
             let pendiente = await Tracking.create(payload_pendiente, this.trx);
-            // deshabilitar tracking
-            await this._disableTrackingCurrent();
             // guardar cambios
             this.trx.commit();
+            // disabled visible
+            await this._disabledVisible([pendiente.dependencia_id, aceptado.dependencia_id], [pendiente.id, aceptado.id]);
             // response
             return pendiente;
         } catch (error) {
             // cancelar cambios
-            this.tracking.merge({ visible: 1, current: 1 });
-            await this.tracking.save();
+            await this._disabledVisible();
             this.trx.rollback();
             throw new CustomException("No se pudó procesar la acción");
         }
@@ -547,16 +544,15 @@ class NextController {
             if (payload_rechazado.user_verify_id == boss_origen.user_id) payload_rechazado.modo = 'DEPENDENCIA';
             // crear rechazado
             let rechazado = await Tracking.create(payload_rechazado, this.trx);
-            // deshabilitar tracking
-            await this._disableTrackingCurrent();
             // guardar cambios
             this.trx.commit();
+            // disabled visible
+            await this._disabledVisible([rechazado.dependencia_id, pendiente.dependencia_id], [rechazado.id, pendiente.id]);
             // response
             return rechazado;
         } catch (error) {
             // cancelar cambios
-            this.tracking.merge({ visible: 1, current: 1 });
-            await this.tracking.save();
+            await this._disabledVisible();
             this.trx.rollback();
             throw new CustomException(error.message);
         }
@@ -610,16 +606,15 @@ class NextController {
             payload_respondido.tracking_id = recibido.id;
             // crear respondido
             let respondido = await Tracking.create(payload_respondido, this.trx);
-            // deshabilitar tracking actual
-            this._disableTrackingCurrent();
             // guardar cambios
             this.trx.commit();
+            // disabled visible
+            await this._disabledVisible([respondido.dependencia_id, recibido.dependencia_id], [respondido.id, recibido.id]);
             // response
             return respondido;
         } catch (error) {
             // cancelar cambios
-            this.tracking.merge({ visible: 1, current: 1 });
-            await this.tracking.save();
+            await this._disabledVisible();
             this.trx.rollback();
             throw new CustomException(error.message);
         }
@@ -653,21 +648,19 @@ class NextController {
             await this._validateModo();
             // crear anulado
             let finalizado = await Tracking.create(payload, this.trx);
-            // deshabilitar tracking
-            await this._disableTrackingCurrent();
             // cambiar estado
             await Tramite.query()
                 .where('id', finalizado.tramite_id)
                 .update({ state : 0 });
             // guardar cambios
             this.trx.commit();
+            // disabled visible
+            await this._disabledVisible([finalizado.dependencia_id], [finalizado.id]);
             // response
             return finalizado;
         } catch (error) {
             // cancelar cambios
-            this.trx.rollback();
-            this.tracking.merge({ visible: 1, current: 1 });
-            await this.tracking.save();
+            await this._disabledVisible();
             await Tramite.query().where('id', this.tracking.tramite_id).update({ state : 1 });
             throw new CustomException(error.message);
         }
@@ -758,6 +751,22 @@ class NextController {
                 .where('id', file.id)
                 .delete()
         }
+    }
+
+    // dejar solo los ultimos registros del trámite en la dependencia
+    async _disabledVisible (dependenciaIds = [], trackingIds = []) {
+        let datos = await Tracking.query()
+            .where('tramite_id', this.tracking.tramite_id)
+            .whereIn('dependencia_id', dependenciaIds)
+            .whereNotIn('id', trackingIds)
+            .update({ visible: 0, current: 0 });
+    }
+
+    // rollback tracking
+    async _rollbackTracking () {
+        await Tracking.query()
+            .where('id', this.tracking.id)
+            .update({ current: 1, visible: 1 });
     }
 }
 
