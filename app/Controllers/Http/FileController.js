@@ -90,7 +90,7 @@ class FileController {
         let exists = await Drive.exists(link);
         if (!exists) throw new Error("No se encontró el archivo");
         let name = `${path}`.split('/').pop();
-        // response.header('Content-Disposition', `inline; filename="${contentDisposition(name)}"`);
+        response.header('Content-Disposition', contentDisposition(name));
         return response.download(link);
     }
 
