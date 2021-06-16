@@ -5,11 +5,12 @@ const Drive = use('Drive');
 const p = require('path');
 const { Storage, validation } = require('validator-error-adonis');
 const uid = require('uid');
+const contentDisposition = require('content-disposition');
 const { LINK } = require('../../../utils');
 const File = use('App/Models/File');
 const { validateAll } = use('Validator');
 const CustomException = require('../../Exceptions/CustomException')
-const NotFoundModelException = require('../../Exceptions/NotFoundModelException')
+const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
 const Env = use('Env');
 
 
@@ -89,7 +90,7 @@ class FileController {
         let exists = await Drive.exists(link);
         if (!exists) throw new Error("No se encontró el archivo");
         let name = `${path}`.split('/').pop();
-        response.header('Content-Disposition', `inline; filename="${name}"`);
+        response.header('Content-Disposition', `inline; filename="${contentDisposition(name)}"`);
         return response.download(link);
     }
 
