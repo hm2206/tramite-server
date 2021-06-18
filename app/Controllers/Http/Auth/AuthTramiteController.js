@@ -136,11 +136,23 @@ class AuthTramiteController {
             .select('files.*')
             .fetch();
         tracking.tramite.old_files = old_files;
+        // obtener enlaces
+        let enlaces = await File.query()
+            .join('infos as i', 'i.id', 'files.object_id')
+            .join('trackings as t', 't.info_id', 'i.id')
+            .where('files.object_type', 'App/Models/Info')
+            .where('t.tramite_id', tracking.tramite_id)
+            .where('t.dependencia_id', tracking.dependencia_id)
+            .select('files.id', 'files.name', 'files.object_id', 'files.object_type', 'files.extname', 'files.size', 'files.url')
+            .groupBy('files.id', 'files.name', 'files.object_id', 'files.object_type', 'files.extname', 'files.size', 'files.url')
+            .fetch();
+        enlaces = await enlaces.toJSON();
         // response 
         return {
             success: true,
             status: 201,
-            tracking
+            tracking,
+            enlaces: []
         }
     }
 
