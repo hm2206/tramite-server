@@ -20,7 +20,7 @@ class TrackingSchema extends Schema {
       table.boolean('current').defaultTo(true).comment('Tracking actual');
       table.boolean('first').defaultTo(false);
       table.enum('modo', ['YO', 'DEPENDENCIA']).defaultTo('YO');
-      table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA', 'ENVIADO']).defaultTo('PENDIENTE');
+      table.enum('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'DERIVADO', 'FINALIZADO', 'RECHAZADO', 'ANULADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA', 'ENVIADO', 'SUBTRAMITE']).defaultTo('PENDIENTE');
       table.string("next");
       table.boolean("multiple").defaultTo(false);
       table.boolean('state').defaultTo(true);

@@ -28,6 +28,7 @@ class NextController {
     tracking = {};
     actions = {
         REGISTRADO: ['ANULADO', 'ENVIADO'],
+        SUBTRAMITE: ['ANULADO', 'ENVIADO'],
         PENDIENTE: ['DERIVADO', 'RESPONDIDO', 'FINALIZADO'],
         RECIBIDO: ['ACEPTADO', 'RECHAZADO'],
         COPIA: ['ACEPTADO'],

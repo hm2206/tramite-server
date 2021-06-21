@@ -11,7 +11,7 @@ TrackingHook.formatter = async (tracking) => {
 
 TrackingHook.createVerify = async (tracking) => {
     // verificar revisado
-    let allows = ['REGISTRADO', 'PENDIENTE'];
+    let allows = ['REGISTRADO', 'PENDIENTE', 'SUBTRAMITE'];
     if (allows.includes(tracking.status)) {
         let revisado = tracking.revisado;
         if (!revisado) tracking.user_id == tracking.user_verify_id ? 1 : 0;

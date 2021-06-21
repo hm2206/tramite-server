@@ -131,13 +131,17 @@ class TramiteEntity {
                     .first(); 
                 if (!before_tracking) throw new CustomException(`No se encontró un seguimiento activo del trámite raíz!`);
                 payload_tracking.tracking_id = before_tracking.id;
-                // finalizar tracking
+                // acabar recorrido del trámite
                 let allow_over = ['RESPONDIDO'];
-                if (allow_over.includes(next)) {
-                    payload_tracking.tracking_id = before_tracking.tracking_id;
-                    before_tracking.merge({ current: 0, status: 'FINALIZADO' });
-                    await before_tracking.save();
-                }
+                payload_tracking.tracking_id = before_tracking.tracking_id;
+                before_tracking.merge({ 
+                    current: 0, 
+                    status: allow_over.includes(next) ? 'FINALIZADO' : 'PENDIENTE',
+                    visible: 0
+                });
+                await before_tracking.save();
+                // validar nuevo tracking
+                payload_tracking.status = 'SUBTRAMITE';
             }
             // crear tracking
             let tracking = await Tracking.create(payload_tracking, trx);
