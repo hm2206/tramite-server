@@ -25,7 +25,6 @@ class VerifyController {
             .first();
         // verificar tracking
         if (!tracking) throw new NotFoundModelException("El seguímiento");
-        console.log(auth.id)
         let verify = await Verify.query()
             .where('tracking_id', tracking.id)
             .where('user_id', auth.id)
