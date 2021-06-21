@@ -131,8 +131,7 @@ class AuthTramiteController {
         let old_files = await File.query()
             .join('tramites as tra', 'tra.id', 'files.object_id')
             .where('files.object_type', 'App/Models/Tramite')
-            .where('tra.slug', tramite.slug)
-            .whereNotIn('tra.id', [tramite.id])
+            .where('tra.id', tramite.tramite_parent_id)
             .select('files.*')
             .fetch();
         tracking.tramite.old_files = old_files;
