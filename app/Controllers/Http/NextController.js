@@ -682,6 +682,7 @@ class NextController {
         // obtener datos
         roles = await roles.whereIn('dependencia_id', ids)
             .where('level', 'BOSS')
+            .where('state', 1)
             .fetch();
         roles = collect(await roles.toJSON());
         // datos reales
