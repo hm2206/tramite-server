@@ -24,7 +24,7 @@ class TimelineController {
             if (tra.first) tra.tramite = tramites.where('id', tra.tramite_id).first() || {};
             tra.info = infos.where('id', tra.info_id).first() || {};
             // agregar sub tracking
-            if (!tra.first && tra.tracking) {
+            if (!tra.first && tra.tracking && tra.status != 'FINALIZADO') {
                 tra.dependencia = dependencias.where('id', tra.tracking.dependencia_id).first() || {};
                 tra.person = people.where('id', tra.tracking.person_id).first() || {};
                 // delete tracking
