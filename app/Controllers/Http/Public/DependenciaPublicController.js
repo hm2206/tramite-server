@@ -9,10 +9,12 @@ class DependenciaPublicController {
      * @param {*} param0 
      */
     show = async ({ params, request }) => {
-        let { page } = request.all();
+        let { page, code } = request.all();
         let exterior = await DependenciaExterior.query()
             .where('entity_id', params.entityId)
-            .pluck('dependencia_id')
+            .where('code', code || null)
+            .debug(['enabled'])
+            .pluck('dependencia_id');
         let ids = exterior.join('&ids[]=');
         // get dependencias
         let dependencia = await request.api_authentication.get(`dependencia?page=${page || 1}&ids[]=${ids}`)
