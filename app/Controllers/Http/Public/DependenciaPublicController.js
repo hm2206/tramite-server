@@ -13,7 +13,6 @@ class DependenciaPublicController {
         let exterior = await DependenciaExterior.query()
             .where('entity_id', params.entityId)
             .where('code', code || null)
-            .debug(['enabled'])
             .pluck('dependencia_id');
         let ids = exterior.join('&ids[]=');
         // get dependencias
