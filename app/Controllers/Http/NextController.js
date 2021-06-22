@@ -288,6 +288,7 @@ class NextController {
             // config tracking
             return derivado;
         } catch (error) {
+            console.log(error);
             // cancelar cambios
             await this._rollbackTracking();
             this.trx.rollback();
@@ -584,6 +585,10 @@ class NextController {
             status: 'RECIBIDO',
             readed_at: null
         }
+        // obtener jefe del area del documento
+        let boss_origen = await this._getBoss(this.tracking.dependencia_id);
+        let boss_destino = await this._getBoss(payload_recibido.dependencia_id);
+        if (boss_destino.user_id == payload_recibido.user_verify_id) payload_recibido.modo = 'DEPENDENCIA';
         // generar respondido 
         let payload_respondido = Object.assign({}, payload_recibido);
         // processar datos
@@ -601,6 +606,8 @@ class NextController {
             payload_respondido.current = 0;
             payload_respondido.modo = this.tracking.dependencia_id != origen.dependencia_id ? 'DEPENDENCIA' : 'YO';
             payload_respondido.status = 'RESPONDIDO';
+            // cambiar respondido
+            if (payload_respondido.user_verify_id == boss_origen.user_id) payload_respondido.modo = 'DEPENDENCIA';
             // crear recibido
             let recibido = await Tracking.create(payload_recibido, this.trx);
             // obtener tracking id
@@ -757,11 +764,14 @@ class NextController {
 
     // dejar solo los ultimos registros del trámite en la dependencia
     async _disabledVisible (dependenciaIds = [], trackingIds = []) {
-        let datos = await Tracking.query()
-            .where('tramite_id', this.tracking.tramite_id)
-            .whereIn('dependencia_id', dependenciaIds)
-            .whereNotIn('id', trackingIds)
-            .update({ visible: 0, current: 0 });
+        let tramite = await this.tracking.tramite().fetch();
+        await DB.table('trackings as t')
+            .join('tramites as tra', 'tra.id', 't.tramite_id')
+            .where('t.user_verify_id', this.tracking.user_verify_id)
+            .where('tra.slug', tramite.slug)
+            .whereIn('t.dependencia_id', dependenciaIds)
+            .whereNotIn('t.id', trackingIds)
+            .update({ 't.visible': 0, 't.current': 0 });
     }
 
     // rollback tracking
