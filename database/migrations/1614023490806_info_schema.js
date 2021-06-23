@@ -7,7 +7,7 @@ class InfoSchema extends Schema {
   up () {
     this.create('infos', (table) => {
       table.increments()
-      table.string('description');
+      table.text('description');
       table.timestamps()
     })
   }
