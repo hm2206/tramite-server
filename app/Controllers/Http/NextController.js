@@ -654,7 +654,7 @@ class NextController {
             });
             // verificar modo 
             await this._validateModo();
-            // crear anulado
+            // crear finalizado
             let finalizado = await Tracking.create(payload, this.trx);
             // cambiar estado
             await Tramite.query()
