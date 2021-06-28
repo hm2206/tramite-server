@@ -150,7 +150,7 @@ class TramiteEntity {
             let files = await fileEntity.store(request, { 
                 object_id: tramite.id, 
                 object_type: 'App/Models/Tramite',
-                extnames: ['pdf', 'docx', 'doc', 'DOCX', 'DOC', 'PDF']
+                extnames: ['pdf', 'docx', 'doc', 'zip', 'rar', 'DOCX', 'DOC', 'PDF', 'ZIP', 'RAR']
             }, `/tramite/${slug}`, trx);
             // guardar transacción
             trx.commit();

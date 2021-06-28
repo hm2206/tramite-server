@@ -49,7 +49,7 @@ class FileController {
             multifiles: true,
             required: true,
             size: Env.get('DRIVE_SIZE', '6mb'),
-            extnames: ['pdf', 'docx', 'doc', 'PDF', 'DOCX', 'DOC'],
+            extnames: ['pdf', 'docx', 'doc', 'zip', 'rar', 'PDF', 'DOCX', 'DOC', 'ZIP', 'RAR'],
         }, Helpers, {
             path: `${folder}/${dir}`,
             options: {
