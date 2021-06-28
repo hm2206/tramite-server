@@ -134,16 +134,16 @@ class AuthTramiteController {
             .where('files.object_type', 'App/Models/Tramite')
             .where('tra.slug', tramite.slug)
             .where('tra.id', '<>', tramite.id)
-            .select('files.*')
-            .orderBy('tra.id', 'ASC')
+            .select('files.*', 'tra.tramite_parent_id')
+            .orderBy('tra.id', 'DESC')
             .fetch();
         tmpFiles = await tmpFiles.toJSON();
         // filtrar archivos a mostrar
         let tramite_id = tramite.tramite_parent_id;
         await tmpFiles.map(f => {
             if (tramite_id != f.object_id) return f;
-            tramite_id = f.object_id;
-            old_files.push(f)
+            tramite_id = f.tramite_parent_id;
+            old_files.unshift(f)
             return f;  
         });
         // save old_files
