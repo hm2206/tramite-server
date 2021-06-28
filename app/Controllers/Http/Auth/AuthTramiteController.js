@@ -128,12 +128,25 @@ class AuthTramiteController {
         tracking.tramite.files = await files.where('object_type', 'App/Models/Tramite').where('object_id', tracking.tramite_id).toArray();
         tracking.tramite.code_qr = code_qr;
         // obtener files antiguos
-        let old_files = await File.query()
+        let old_files = [];
+        let tmpFiles = await File.query()
             .join('tramites as tra', 'tra.id', 'files.object_id')
             .where('files.object_type', 'App/Models/Tramite')
-            .where('tra.id', tramite.tramite_parent_id)
+            .where('tra.slug', tramite.slug)
+            .where('tra.id', '<>', tramite.id)
             .select('files.*')
+            .orderBy('tra.id', 'ASC')
             .fetch();
+        tmpFiles = await tmpFiles.toJSON();
+        // filtrar archivos a mostrar
+        let tramite_id = tramite.tramite_parent_id;
+        await tmpFiles.map(f => {
+            if (tramite_id != f.object_id) return f;
+            tramite_id = f.object_id;
+            old_files.push(f)
+            return f;  
+        });
+        // save old_files
         tracking.tramite.old_files = old_files;
         // obtener enlaces
         let enlaces = await File.query()
