@@ -9,7 +9,6 @@ const Role = use('App/Models/Role');
 const NotFoundModelException = require('../Exceptions/NotFoundModelException');
 const CustomException = require('../Exceptions/CustomException');
 const { validation, ValidatorError } = require('validator-error-adonis');
-const uid = require('uid');
 const DBException = require('../Exceptions/DBException');
 const FileEntity = require('../Entities/FileEntity');
 const { collect } = require('collect.js');
@@ -34,6 +33,30 @@ class TramiteEntity {
         tramite_parent_id: "",
         user_id: "",
         state: 1
+    }
+
+    dataPagination = {
+        page: 1,
+        perPage: 20,
+        query_search: "",
+        custom: {}
+    }
+
+    async index(tmpDatos = this.dataPagination) {
+        let datos = Object.assign(this.dataPagination, tmpDatos);
+        let tramites = Tramite.query()
+        // filtrar query_saerch
+        if (datos.query_search) tramites.where(DB.raw(`(slug like '%${datos.query_search}%' OR asunto like '%${datos.query_search}%')`));
+        // filtros
+        for (let attr in datos.custom) {
+            let value = datos.custom[attr];
+            if (Array.isArray(value)) tramites.whereIn(attr, value);
+            else if (typeof value != 'undefined' && value != '' && value != null) tramites.where(DB.raw(attr), value);
+        } 
+        // obtener datos
+        tramites = datos.perPage ? await tramites.paginate(datos.page, datos.perPage) :  await tramites.fetch();
+        tramites = await tramites.toJSON();
+        return tramites;
     }
 
     async store (request, datos = this.attributes, auth = {}, next = null) {
@@ -201,6 +224,13 @@ class TramiteEntity {
         // guardar
         await  tramite.save();
         return tramite;
+    }
+
+    async delete (id) {
+        let tramite = await Tramite.find(id);
+        if (!tramite) throw new NotFoundModelException("El trámite")
+        let isDelete = await tramite.delete();
+        return isDelete;
     }
 
     async generateFolio (tramite, files = []) {

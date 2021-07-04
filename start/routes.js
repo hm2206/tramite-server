@@ -8,10 +8,12 @@ Route('get', 'ConfigDependenciaController.dependenciaDestino').middleware(['jwt'
 Route('delete', 'ConfigDependenciaController.delete').middleware(['jwt', 'entityId', 'dependenciaId']);
 
 // Tramite
+Route("get", "TramiteController.index").middleware(['jwt', 'entityId']);
 Route("get", "TramiteController.codeQr");
 Route("post", "TramiteController.store").middleware(['jwt', 'entityId', 'dependenciaId', 'socket']);
 Route("post", "TramiteController.anularProcess").middleware('jwt');
 Route("put", "TramiteController.update").middleware(['jwt']);
+Route("delete", "TramiteController.delete").middleware(['jwt', 'entityId']);
 
 // Tipo de trámite
 Route("get", "TramiteTypeController.index");

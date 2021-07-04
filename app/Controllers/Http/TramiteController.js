@@ -16,6 +16,18 @@ const Tracking = use('App/Models/Tracking');
 
 class TramiteController {
 
+    async index({ request }) {
+        let authentication = request.api_authentication;
+        let page = request.input('page', 1)
+        const tramiteEntity = new TramiteEntity(authentication);
+        const tramites = await tramiteEntity.index({ page });
+        return {
+            success: true,
+            status: 200,
+            tramites
+        }
+    }
+
     // crear tramite interno
     store = async ({ request }) => {
         const authentication = request.api_authentication;
@@ -111,6 +123,16 @@ class TramiteController {
             status: 201,
             message: "El trámite se actulizó correctamente!",
             tramite
+        }
+    }
+
+    async delete({ params }) {
+        const tramiteEntity = new TramiteEntity();
+        const isDelete = await tramiteEntity.delete(params.id);
+        return { 
+            success: true,
+            status: 201,
+            message: "El tramite se eliminó correctamente!"
         }
     }
 }

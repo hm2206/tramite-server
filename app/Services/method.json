@@ -17,6 +17,12 @@
     "description": "Listar dependencia destino de una dependencia",
     "action_type": "VIEW"
   },
+  "TramiteController.index": {
+    "name": "TramiteController.index",
+    "url": "api/tramite",
+    "description": "Listar Trámite",
+    "action_type": "VIEW"
+  },
   "TramiteController.store": {
     "name": "TramiteController.store",
     "url": "api/tramite",
@@ -40,6 +46,12 @@
     "url": "api/tramite/:id",
     "description": "Actualizar datos del trámite",
     "action_type": "UPDATE"
+  },
+  "TramiteController.delete": {
+    "name": "TramiteController.delete",
+    "url": "api/tramite/:id",
+    "description": "Eliminar Trámite",
+    "action_type": "DELETE"
   },
   "TramiteTypeController.index": {
     "name": "TramiteTypeController.index",
