@@ -45,17 +45,47 @@ class TramiteEntity {
     async index(tmpDatos = this.dataPagination) {
         let datos = Object.assign(this.dataPagination, tmpDatos);
         let tramites = Tramite.query()
+            .with('current_tracking', (build) => {
+                build.where('current', 1)
+                    .where('visible', 1)
+            })
+            .with('tramite_type')
         // filtrar query_saerch
         if (datos.query_search) tramites.where(DB.raw(`(slug like '%${datos.query_search}%' OR asunto like '%${datos.query_search}%')`));
         // filtros
-        for (let attr in datos.custom) {
+        for (let attr in datos.custom) {    
             let value = datos.custom[attr];
             if (Array.isArray(value)) tramites.whereIn(attr, value);
             else if (typeof value != 'undefined' && value != '' && value != null) tramites.where(DB.raw(attr), value);
         } 
+        let isPaginate = datos.perPage ? true : false;
         // obtener datos
-        tramites = datos.perPage ? await tramites.paginate(datos.page, datos.perPage) :  await tramites.fetch();
+        tramites = isPaginate ? await tramites.paginate(datos.page, datos.perPage) :  await tramites.fetch();
         tramites = await tramites.toJSON();
+        let result = collect(isPaginate ? tramites.data : tramites);
+        let dependenciaIds = result.groupBy('dependencia_origen_id').keys().toArray();
+        let peopleIds = result.groupBy('person_id').keys().toArray();
+        // obtener dependencias
+        let dependencias = await this.authentication.get(`dependencia?ids[]=${dependenciaIds.join('&ids[]=')}`)
+        .then(({ data }) => data.dependencia.data || [])
+        .catch(err => ([]));
+        dependencias = collect(dependencias);
+        // obtener people
+        let people = await this.authentication.get(`person?ids[]=${peopleIds.join('&ids[]=')}`)
+        .then(({ data }) => data.people.data || [])
+        .catch(() => ([]))
+        people = collect(people);
+        // setting tramite
+        result = await result.toArray();
+        await result.map(tra => {
+            tra.person = people.where('id', tra.person_id).first() || {};
+            tra.dependencia = dependencias.where('id', tra.dependencia_origen_id).first() || {};
+            return tra
+        });
+        // add tramites
+        if (isPaginate) tramites.date = result;
+        else tramites = result;
+        // result
         return tramites;
     }
 

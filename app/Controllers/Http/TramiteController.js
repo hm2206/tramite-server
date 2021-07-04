@@ -1,15 +1,9 @@
 'use strict'
 
-const { validation, ValidatorError } = require('validator-error-adonis');
-const { validateAll } = use('Validator');
-const TramiteType = use('App/Models/TramiteType');
 const Tramite = use('App/Models/Tramite');
-const uid = require('uid')
 const Event = use('Event');
 const codeQR = require('qrcode');
 const Env = use('Env');
-const File = use('App/Models/File');
-const Drive = use('Drive');
 const TramiteEntity = require('../../Entities/TramiteEntity');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
 const Tracking = use('App/Models/Tracking');
@@ -19,8 +13,9 @@ class TramiteController {
     async index({ request }) {
         let authentication = request.api_authentication;
         let page = request.input('page', 1)
+        let query_search = request.input('query_search', '')
         const tramiteEntity = new TramiteEntity(authentication);
-        const tramites = await tramiteEntity.index({ page });
+        const tramites = await tramiteEntity.index({ page, query_search });
         return {
             success: true,
             status: 200,
@@ -126,9 +121,10 @@ class TramiteController {
         }
     }
 
-    async delete({ params }) {
-        const tramiteEntity = new TramiteEntity();
-        const isDelete = await tramiteEntity.delete(params.id);
+    async delete({ params, request }) {
+        const authentication = request.api_authentication;
+        const tramiteEntity = new TramiteEntity(authentication);
+        await tramiteEntity.delete(params.id);
         return { 
             success: true,
             status: 201,
