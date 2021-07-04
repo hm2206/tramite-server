@@ -53,6 +53,12 @@
     "description": "Eliminar Trámite",
     "action_type": "DELETE"
   },
+  "TramiteController.toggleCurrent": {
+    "name": "TramiteController.toggleCurrent",
+    "url": "api/tramite/:id/toggle_current",
+    "description": "Habiliar o deshabilitar Trámite origen",
+    "action_type": "UPDATE"
+  },
   "TramiteTypeController.index": {
     "name": "TramiteTypeController.index",
     "url": "api/tramite_type",

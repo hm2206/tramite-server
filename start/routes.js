@@ -14,6 +14,7 @@ Route("post", "TramiteController.store").middleware(['jwt', 'entityId', 'depende
 Route("post", "TramiteController.anularProcess").middleware('jwt');
 Route("put", "TramiteController.update").middleware(['jwt']);
 Route("delete", "TramiteController.delete").middleware(['jwt', 'entityId']);
+Route("put", "TramiteController.toggleCurrent").middleware(['jwt', 'entityId']);
 
 // Tipo de trámite
 Route("get", "TramiteTypeController.index");

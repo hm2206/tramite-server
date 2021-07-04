@@ -49,6 +49,7 @@ class TramiteEntity {
                 build.where('current', 1)
                     .where('visible', 1)
             })
+            .withCount('current_tracking')
             .with('tramite_type')
         // filtrar query_saerch
         if (datos.query_search) tramites.where(DB.raw(`(slug like '%${datos.query_search}%' OR asunto like '%${datos.query_search}%')`));
@@ -83,7 +84,7 @@ class TramiteEntity {
             return tra
         });
         // add tramites
-        if (isPaginate) tramites.date = result;
+        if (isPaginate) tramites.data = result;
         else tramites = result;
         // result
         return tramites;

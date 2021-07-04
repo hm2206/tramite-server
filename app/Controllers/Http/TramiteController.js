@@ -131,6 +131,50 @@ class TramiteController {
             message: "El tramite se eliminó correctamente!"
         }
     }
+
+    async toggleCurrent({ params, request }) {
+        let status = request.input('status', 'enabled');
+        let allowStatus = ['enabled', 'disabled'];
+        if (!allowStatus.includes(status)) throw new Error("El status es invalido!!!");
+        // obtener tramite
+        let tramite = await Tramite.find(params.id);
+        if (!tramite) throw new NotFoundModelException("El trámite");
+        // validar status
+        if (status == 'enabled') {
+            // ocultamos el tracking actual
+            await Tracking.query()
+                .where('tramite_id', tramite.id)
+                .where('current', 1)
+                .update({ visible: 0 });
+            // habilitamos el tracking origen
+            await Tracking.query()
+                .where('tramite_id', tramite.id)
+                .where('first', 1)
+                .update({ visible: 1, current: 1 });
+        } else {
+            // validas que exista más de un tracking
+            let count = await Tracking.query()
+                .where('tramite_id', tramite.id)
+                .getCount('id');
+            if (count <= 1) throw new Error("No se puede deshabilitar el tracking actual!");
+            // ocultamos el primer tracking
+            await Tracking.query()
+                .where('tramite_id', tramite.id)
+                .where('first', 1)
+                .update({ visible: 0, current: 0 });
+            // habilitamos ultimo current
+            await Tracking.query()
+                .where('tramite_id', tramite.id)
+                .where('current', 1)
+                .update({ visible: 1 });
+        }
+        // response
+        return {
+            success: true,
+            status: 201,
+            message: `El tramité ${status == 'enabled' ? 'regresó a su origen' : 'seguirá con su flujo'} correctamente!!!`
+        }
+    }
 }
 
 module.exports = TramiteController
