@@ -3,9 +3,9 @@
 const Route = require('../app/Services/route');
 
 // Config Dependencia
-Route('post', 'ConfigDependenciaController.store').middleware(['jwt', 'entityId', 'dependenciaId']);
-Route('get', 'ConfigDependenciaController.dependenciaDestino').middleware(['jwt', 'entityId', 'dependenciaId']);
-Route('delete', 'ConfigDependenciaController.delete').middleware(['jwt', 'entityId', 'dependenciaId']);
+Route('post', 'ConfigDependenciaController.store').middleware(['jwt', 'entityId']);
+Route('get', 'ConfigDependenciaController.dependenciaDestino').middleware(['jwt', 'entityId']);
+Route('delete', 'ConfigDependenciaController.delete').middleware(['jwt', 'entityId']);
 
 // Tramite
 Route("get", "TramiteController.index").middleware(['jwt', 'entityId']);
@@ -38,9 +38,9 @@ Route("post", "FileController.observation").middleware(['jwt']);
 Route("post", "FileController.destroy").middleware(['jwt']);
 
 // Roles
-Route("get", "RoleController.index").middleware(['jwt', 'entityId', 'dependenciaId']);
-Route("post", "RoleController.store").middleware(['jwt', 'entityId', 'dependenciaId']);
-Route("put", "RoleController.disabled").middleware(['jwt', 'entityId', 'dependenciaId']);
+Route("get", "RoleController.index").middleware(['jwt', 'entityId']);
+Route("post", "RoleController.store").middleware(['jwt', 'entityId',]);
+Route("put", "RoleController.disabled").middleware(['jwt', 'entityId']);
 
 // Verificar
 Route("post", "VerifyController.handle").middleware(['jwt', 'entityId', 'dependenciaId', 'socket']);

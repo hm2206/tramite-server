@@ -13,16 +13,15 @@ class ConfigDependenciaController {
             dependencia_destino_id: 'required'
         });
         let entity = request.$entity;
-        let dependencia = request.$dependencia;
         let payload = {
             entity_id: entity.id,
-            dependencia_id: dependencia.id,
+            dependencia_id: request.input('dependencia_id'),
             dependencia_destino_id: request.input('dependencia_destino_id')
         };
         // validar 
         let is_exists = await ConfigDependencia.query()
             .where('entity_id', entity.id)
-            .where('dependencia_id', dependencia.id)
+            .where('dependencia_id', payload.dependencia_id)
             .where('dependencia_destino_id', payload.dependencia_destino_id)
             .getCount('id');
         if (is_exists) throw new ValidatorError([{ field: "dependencia_destino_id", message: "La dependencia destino ya existe" }]);
@@ -44,12 +43,10 @@ class ConfigDependenciaController {
     async dependenciaDestino ({ params, request }) {
         let id = params.id;
         let entity = request.$entity;
-        let current_dependencia = request.$dependencia;
-        if (id != current_dependencia.id) throw new NotFoundModelException("Dependencia Destino");
         let { page } = request.all();
         let config_dependencias = await ConfigDependencia.query()
             .where('entity_id', entity.id)
-            .where('dependencia_id', current_dependencia.id)
+            .where('dependencia_id', id)
             .paginate(page || 1, 20);
         config_dependencias = await config_dependencias.toJSON();
         let plucked = collect(config_dependencias.data).pluck('dependencia_destino_id').toArray();
@@ -68,11 +65,11 @@ class ConfigDependenciaController {
 
     async delete ({ params, request }) {
         let entity = request.$entity;
-        let dependencia = request.$dependencia;
+        let dependencia_id = request.input('dependencia_id', '')
         try {
             let config_dependencia = await ConfigDependencia.query()
                 .where('entity_id', entity.id)
-                .where('dependencia_id', dependencia.id)
+                .where('dependencia_id', dependencia_id)
                 .where('dependencia_destino_id', params.id)
                 .first();
             await config_dependencia.delete();
@@ -83,7 +80,6 @@ class ConfigDependenciaController {
                 message: "La dependencia destino se elimino correctamente!"
             }
         } catch (error) {
-            console.log(error);
             throw new Error("No se pudo eliminar la dependencia destino");
         }
     }
