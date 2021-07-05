@@ -282,7 +282,11 @@ class NextController {
             // guardar cambios
             await this.trx.commit();
             // disabled visible
-            await this._disabledVisible([payload_derivado.dependencia_id, payload_recibido.dependencia_id], [recibido.id, derivado.id]);
+            await this._disabledVisible(
+                [derivado.dependencia_id, recibido.dependencia_id], 
+                [recibido.id, derivado.id],
+                [recibido.user_verify_id, derivado.user_verify_id]
+            );
             // eliminar archivos
             await this._deleteFilesNotPdf();
             // config tracking
@@ -374,7 +378,11 @@ class NextController {
             // guardar cambios
             this.trx.commit();
             // disabled visible
-            await this._disabledVisible([derivado.dependencia_id, recibido.dependencia_id], [recibido.id, derivado.id]);
+            await this._disabledVisible([
+                derivado.dependencia_id, recibido.dependencia_id], 
+                [recibido.id, derivado.id],
+                [recibido.user_verify_id, derivado.user_verify_id]
+            );
             // config tracking
             return derivado;
         } catch (error) {
@@ -436,6 +444,7 @@ class NextController {
             tracking_id: this.tracking.id,
             revisado: 1,
             visible: is_first ? 0 : 1,
+            info_id: this.tracking.info_id,
             current: 0,
             first: 0,
             modo: 'YO',
@@ -477,7 +486,11 @@ class NextController {
             // guardar cambios
             this.trx.commit();
             // disabled visible
-            await this._disabledVisible([pendiente.dependencia_id, aceptado.dependencia_id], [pendiente.id, aceptado.id]);
+            await this._disabledVisible(
+                [pendiente.dependencia_id, aceptado.dependencia_id], 
+                [pendiente.id, aceptado.id],
+                [pendiente.user_verify_id, aceptado.user_verify_id]
+            );
             // response
             return pendiente;
         } catch (error) {
@@ -508,6 +521,7 @@ class NextController {
             revisado: 0,
             visible: is_first ? 0 : 1,
             current: 1,
+            info_id: this.tracking.info_id,
             first: 0,
             alert: 1,
             modo: 'YO',
@@ -549,7 +563,11 @@ class NextController {
             // guardar cambios
             this.trx.commit();
             // disabled visible
-            await this._disabledVisible([rechazado.dependencia_id, pendiente.dependencia_id], [rechazado.id, pendiente.id]);
+            await this._disabledVisible(
+                [rechazado.dependencia_id, pendiente.dependencia_id], 
+                [rechazado.id, pendiente.id],
+                [rechazado.user_verify_id, pendiente.user_verify_id]
+            );
             // response
             return rechazado;
         } catch (error) {
@@ -617,7 +635,11 @@ class NextController {
             // guardar cambios
             this.trx.commit();
             // disabled visible
-            await this._disabledVisible([respondido.dependencia_id, recibido.dependencia_id], [respondido.id, recibido.id]);
+            await this._disabledVisible(
+                [respondido.dependencia_id, recibido.dependencia_id], 
+                [respondido.id, recibido.id],
+                [respondido.user_verify_id, recibido.user_verify_id]
+            );
             // response
             return respondido;
         } catch (error) {
@@ -663,7 +685,7 @@ class NextController {
             // guardar cambios
             this.trx.commit();
             // disabled visible
-            await this._disabledVisible([finalizado.dependencia_id], [finalizado.id]);
+            await this._disabledVisible([finalizado.dependencia_id], [finalizado.id], [finalizado.user_verify_id]);
             // response
             return finalizado;
         } catch (error) {
@@ -763,11 +785,11 @@ class NextController {
     }
 
     // dejar solo los ultimos registros del trámite en la dependencia
-    async _disabledVisible (dependenciaIds = [], trackingIds = []) {
+    async _disabledVisible (dependenciaIds = [], trackingIds = [], userVerifyIds = []) {
         let tramite = await this.tracking.tramite().fetch();
         await DB.table('trackings as t')
             .join('tramites as tra', 'tra.id', 't.tramite_id')
-            .where('t.user_verify_id', this.tracking.user_verify_id)
+            .whereIn('t.user_verify_id', userVerifyIds)
             .where('tra.slug', tramite.slug)
             .whereIn('t.dependencia_id', dependenciaIds)
             .whereNotIn('t.id', trackingIds)
