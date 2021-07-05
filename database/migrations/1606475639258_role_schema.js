@@ -11,7 +11,6 @@ class RoleSchema extends Schema {
       table.integer('entity_id');
       table.integer('dependencia_id')
       table.enum('level', ['BOSS', 'SECRETARY'])
-      table.unique(['user_id', 'dependencia_id', 'entity_id']);
       table.timestamps()
     })
   }

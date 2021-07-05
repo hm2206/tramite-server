@@ -13,12 +13,12 @@ class RoleController {
         const { page } = request.all();
         // config
         let entity = request.$entity;
-        let dependencia = request.$dependencia;
+        let dependencia_id = request.input('dependencia_id');
         let state = request.input('state', 1) ? 1 : 0;
         // obtener roles
         let roles = await Role.query()
             .where('entity_id', entity.id)
-            .where('dependencia_id', dependencia.id)
+            .where('dependencia_id', dependencia_id)
             .where('state', state)
             .paginate(page || 1, 20);
         roles = await roles.toJSON();
