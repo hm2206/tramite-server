@@ -45,7 +45,7 @@ class RoleController {
         });
         // config
         let entity = request.$entity;
-        let dependencia = request.$dependencia;
+        let dependencia_id = request.input('dependencia_id')
         // obtener usuario
         let user = await this._findUser(request, request.input('user_id'));
         if (!user) throw new Error("No se encontró el usuario");
@@ -53,7 +53,7 @@ class RoleController {
         try {
             let role = await Role.create({
                 entity_id: entity.id,
-                dependencia_id: dependencia.id,
+                dependencia_id: dependencia_id,
                 user_id: user.id,
                 person_id: user.person_id,
                 level: request.input('level')
