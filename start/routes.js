@@ -9,6 +9,7 @@ Route('delete', 'ConfigDependenciaController.delete').middleware(['jwt', 'entity
 
 // Tramite
 Route("get", "TramiteController.index").middleware(['jwt', 'entityId']);
+Route("get", "TramiteController.show");
 Route("get", "TramiteController.codeQr");
 Route("post", "TramiteController.store").middleware(['jwt', 'entityId', 'dependenciaId', 'socket']);
 Route("post", "TramiteController.anularProcess").middleware('jwt');

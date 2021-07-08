@@ -23,6 +23,18 @@ class TramiteController {
         }
     }
 
+    async show({ params, request }) {
+        const authentication = request.api_authentication;
+        const column = request.input('column', 'id');
+        const tramiteEntity = new TramiteEntity(authentication);
+        const tramite = await tramiteEntity.show(params.id, column);
+        return {
+            success: true,
+            status: 200,
+            tramite
+        }
+    }
+
     // crear tramite interno
     store = async ({ request }) => {
         const authentication = request.api_authentication;

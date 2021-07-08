@@ -39,6 +39,10 @@ class Tramite extends Model {
     current_tracking () {
         return this.hasOne('App/Models/Tracking')
     }
+
+    files() {
+        return this.hasMany('App/Models/File', 'id', 'object_id');
+    }
 }
 
 module.exports = Tramite

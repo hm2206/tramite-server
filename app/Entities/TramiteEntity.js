@@ -90,6 +90,29 @@ class TramiteEntity {
         return tramites;
     }
 
+    async show(id, column = 'id') {
+        let allowColumn = ['id', 'slug'];
+        if (!allowColumn.includes(column)) throw new CustomException("La columna no está permitida!");
+        let tramite = await Tramite.findBy(column, id);
+        if (!tramite) throw new NotFoundModelException("El trámite");
+        tramite.code_qr = await tramite.funcCodeQr();
+        tramite.tramite_type = await tramite.tramite_type().fetch();
+        tramite.files = await tramite.files().where('object_type', 'App/Models/Tramite').fetch();
+        tramite = JSON.parse(JSON.stringify(tramite));
+        // obener persona
+        let { person } = await this.authentication.get(`person/${tramite.person_id}`)
+        .then(res => res.data)
+        .catch(() => ({ person: {} }));
+        // obtener dependencia
+        let { dependencia } = await this.authentication.get(`dependencia/${tramite.dependencia_origen_id}`)
+        .then(res => res.data)
+        .catch(() => ({ dependencia: {} }))
+        // add datos
+        tramite.person = person;
+        tramite.dependencia = dependencia;
+        return tramite;
+    }
+
     async store (request, datos = this.attributes, auth = {}, next = null) {
         // validaciones
         await validation(null, datos, {

@@ -23,6 +23,12 @@
     "description": "Listar Trámite",
     "action_type": "VIEW"
   },
+  "TramiteController.show": {
+    "name": "TramiteController.show",
+    "url": "api/tramite/:id",
+    "description": "Obtener Trámite",
+    "action_type": "VIEW"
+  },
   "TramiteController.store": {
     "name": "TramiteController.store",
     "url": "api/tramite",
