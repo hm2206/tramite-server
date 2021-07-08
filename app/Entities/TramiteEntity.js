@@ -186,11 +186,10 @@ class TramiteEntity {
                 if (!before_tracking) throw new CustomException(`No se encontró un seguimiento activo del trámite raíz!`);
                 payload_tracking.tracking_id = before_tracking.id;
                 // acabar recorrido del trámite
-                let allow_over = ['RESPONDIDO'];
                 payload_tracking.tracking_id = before_tracking.tracking_id;
                 before_tracking.merge({ 
                     current: 0, 
-                    status: allow_over.includes(next) ? 'FINALIZADO' : 'PENDIENTE',
+                    status: 'PENDIENTE',
                     visible: 0
                 });
                 await before_tracking.save();
