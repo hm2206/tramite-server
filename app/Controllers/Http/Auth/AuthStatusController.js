@@ -9,6 +9,7 @@ class AuthStatusController {
         let dependencia = request.$dependencia;
         let auth = request.$auth;
         let modo = `${request.input('modo', 'YO')}`.toUpperCase();
+        let query_search = request.input('query_search', '');
         // permitidos
         let allow_status = request.input('status', ['REGISTRADO', 'PENDIENTE', 'ACEPTADO', 'FINALIZADO', 'RECHAZADO', 'RECIBIDO', 'RESPONDIDO', 'COPIA', 'DERIVADO', 'ANULADO']);
         // select dinamico
@@ -25,6 +26,11 @@ class AuthStatusController {
             // validar yo
             if (modo == 'YO') raw_status.where('tra.user_verify_id', auth.id)
                 .where('tra.archived', 0);
+            // validar query_search
+            if (query_search) raw_status.leftJoin('files as f', 'f.object_id', 't.id')
+                .where('f.object_type', 'App/Models/Tramite')
+                .where(DB.raw(`(t.slug like '%${query_search}%' OR t.document_number like '%${query_search}%' OR f.name like '%${query_search}%')`))
+                .groupBy('tra.status')
             // add select
             select_status.push(`(${raw_status}) as ${allow}`);
         });
