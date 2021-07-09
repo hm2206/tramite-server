@@ -7,6 +7,7 @@ const Env = use('Env');
 const TramiteEntity = require('../../Entities/TramiteEntity');
 const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
 const Tracking = use('App/Models/Tracking');
+const collect = require('collect.js');
 
 class TramiteController {
 
@@ -60,6 +61,63 @@ class TramiteController {
             status: 201,
             message: "El tramite se creó correctamente",
             tramite
+        }
+    }
+
+    async update ({ params, request }) {
+        let datos = request.all();
+        let auth = request.$auth;
+        let tramiteEntity = new TramiteEntity();
+        let tramite = await tramiteEntity.update(params.id, datos, auth.id);
+        return {
+            success: true,
+            status: 201,
+            message: "El trámite se actulizó correctamente!",
+            tramite
+        }
+    }
+
+    async trackings({ params, request }) {
+        let page = request.input('page', 1);
+        let authentication = request.api_authentication;
+        let entity = request.$entity;
+        let tramite = await Tramite.query()
+            .where('entity_id', entity.id)
+            .where('id', params.id)
+            .first();
+        if (!tramite) throw new NotFoundModelException("El trámite");
+        let trackings = await Tracking.query()
+            .where('tramite_id', tramite.id)
+            .paginate(page, 20);
+        trackings = await trackings.toJSON();
+        // collections
+        let storage = collect(trackings.data);
+        let personIds = storage.pluck('person_id').toArray();
+        let dependenciaIds = storage.pluck('dependencia_id').toArray();
+        // obtener person
+        let { people } = await authentication.get(`person?ids[]=${personIds.join('&ids[]=')}`)
+        .then(res => {
+            let { people } = res.data;
+            return { people: collect(people.data) }
+        }).catch(() => ({ people: collect([]) }));
+        // obtener dependencias
+        let { dependencia } = await authentication.get(`dependencia?ids[]=${dependenciaIds.join('&ids[]=')}`)
+        .then(res => {
+            let { dependencia } = res.data;
+            return { dependencia: collect(dependencia.data) }
+        }).catch(() => ({ dependencia: collect([]) }));
+        // setting
+        storage = await storage.toArray();
+        await storage.map(s => {
+            s.person = people.where('id', s.person_id).first() || {};
+            s.dependencia = dependencia.where('id', s.dependencia_id).first() || {};
+            return s;
+        });
+        // response
+        return {
+            success: true,
+            status: 200,
+            trackings
         }
     }
 
@@ -120,19 +178,6 @@ class TramiteController {
         }
     }
 
-    async update ({ params, request }) {
-        let datos = request.all();
-        let auth = request.$auth;
-        let tramiteEntity = new TramiteEntity();
-        let tramite = await tramiteEntity.update(params.id, datos, auth.id);
-        return {
-            success: true,
-            status: 201,
-            message: "El trámite se actulizó correctamente!",
-            tramite
-        }
-    }
-
     async delete({ params, request }) {
         const authentication = request.api_authentication;
         const tramiteEntity = new TramiteEntity(authentication);
@@ -187,6 +232,7 @@ class TramiteController {
             message: `El tramité ${status == 'enabled' ? 'regresó a su origen' : 'seguirá con su flujo'} correctamente!!!`
         }
     }
+    
 }
 
 module.exports = TramiteController

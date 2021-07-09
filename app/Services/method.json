@@ -65,6 +65,12 @@
     "description": "Habiliar o deshabilitar Trámite origen",
     "action_type": "UPDATE"
   },
+  "TramiteController.trackings": {
+    "name": "TramiteController.trackings",
+    "url": "api/tramite/:id/trackings",
+    "description": "Listar seguímiento de trámite",
+    "action_type": "VIEW"
+  },
   "TramiteTypeController.index": {
     "name": "TramiteTypeController.index",
     "url": "api/tramite_type",
