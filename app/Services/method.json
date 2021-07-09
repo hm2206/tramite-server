@@ -113,6 +113,12 @@
     "description": "actualizar archived del tracking",
     "action_type": "UPDATE"
   },
+  "TrackingController.backRecibido": {
+    "name": "TrackingController.backRecibido",
+    "url": "api/tracking/:id/back_recibido",
+    "description": "Regresar tracking a recibido",
+    "action_type": "DELETE"
+  },
   "TrackingController.multiple": {
     "name": "TrackingController.multiple",
     "url": "api/tracking/:id/multiple",

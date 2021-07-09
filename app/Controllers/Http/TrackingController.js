@@ -156,6 +156,45 @@ class TrackingController {
         }
     }
 
+    // regresar pendiente a recibido
+    backRecibido = async ({ params, request }) => {
+        let dependencia = request.$dependencia;
+        let tracking = await Tracking.query()
+            .with('tracking')
+            .where('dependencia_id', dependencia.id)
+            .where('id', params.id)
+            .where('current', 1)
+            .where('visible', 1)
+            .where('revisado', 0)
+            .where('status', 'PENDIENTE')
+            .first();
+        if (!tracking) throw new NotFoundModelException("El seguímiento");
+        tracking = await tracking.toJSON();
+        if (!Object.keys(tracking.tracking || {})) throw new Error("No se encontró un seguimiento anterior");
+        if (tracking.tracking.status != 'ACEPTADO') throw new Error("El trámite anterior debe estár aceptado");
+        let recibido = await Tracking.find(tracking.tracking.tracking_id || '__error');
+        if (!recibido) throw new NotFoundModelException("El seguímiento recibido de la dependencia");
+        if (recibido.status != 'RECIBIDO') throw new Error("Es imposible volver a recibido");
+        // volver a recibido
+        try {
+            recibido.merge({ current: 1, visible: 1 });
+            await recibido.save();
+            // eliminar anteriores
+            await Tracking.query()
+                .whereIn('id', [tracking.id, tracking.tracking_id])
+                .delete();
+            // response
+            return {
+                success: true,
+                status: 201,
+                message: `El trámite regresó a recibido correctamente!`,
+                tracking: recibido
+            }
+        } catch (error) {
+            throw new Error("No se pudó completar el proceso");
+        }
+    }
+
     // obtener dependencias
     _getDependencias = async (request, ids = []) => {
         let { success, dependencia } = await request.api_authentication.get(`dependencia?ids[]=${ids.join('&ids[]=')}`)
