@@ -161,8 +161,9 @@ class NextController {
         this.entity = request.$entity;
         this.dependencia = request.$dependencia;
         this.auth = request.$auth;
-        this.multiple = request.input('multiple') ? JSON.parse(request.input('multiple')) : [];
+        this.multiple = request.input('multiple') ? JSON.parse(request.input('multiple') || "[]") : [];
         this.is_action = request.input('is_action') == 1 ? true : false;
+        this.users = request.input('users') ? JSON.parse(request.input('users', '[]')) : [];
         // obtener tracking
         await this._getTracking({ params, request });
         await this._validateAction(request.input('status'));
@@ -260,6 +261,7 @@ class NextController {
         payload_derivado.person_id = this.tracking.person_id;
         payload_derivado.current = 0;
         payload_derivado.status = 'ENVIADO';
+        payload_derivado.is_action = 1;
         payload_derivado.modo = 'YO';
         // cambiar derivado
         if (payload_derivado.user_verify_id == boss_origen.user_id) payload_derivado.modo = 'DEPENDENCIA';
@@ -276,8 +278,9 @@ class NextController {
             payload_derivado.tracking_id = recibido.id;
             // crear derivado
             let derivado = await Tracking.create(payload_derivado, this.trx);
-            // generar copia
-            await this._multiple({ next_tracking: recibido, current_tracking: derivado });
+            // generar multiple
+            if (!self_dependencia) await this._multiple({ next_tracking: recibido, current_tracking: derivado });
+            else await this._multipleUsers({ next_tracking: recibido, current_tracking: derivado });
             // guardar cambios
             await this.trx.commit();
             // disabled visible
@@ -354,6 +357,7 @@ class NextController {
         payload_derivado.user_verify_id = this.tracking.user_verify_id;
         payload_derivado.person_id = this.tracking.person_id;
         payload_derivado.current = 0;
+        payload_derivado.is_action = 1;
         payload_derivado.status = 'DERIVADO';
         payload_derivado.modo = 'DEPENDENCIA';
         // cambiar derivado
@@ -371,8 +375,9 @@ class NextController {
             payload_derivado.tracking_id = recibido.id;
             // crear derivado
             let derivado = await Tracking.create(payload_derivado, this.trx);
-            // generar copia
-            await this._multiple({ next_tracking: recibido, current_tracking: derivado });
+            // generar multiple
+            if (!self_dependencia) await this._multiple({ next_tracking: recibido, current_tracking: derivado });
+            else await this._multipleUsers({ next_tracking: recibido, current_tracking: derivado });
             // guardar cambios
             this.trx.commit();
             // disabled visible
@@ -736,6 +741,42 @@ class NextController {
                     status: m.action ? 'RECIBIDO' : 'COPIA'
                 });
             }
+        });
+        // generar copia
+        await Tracking.createMany(payload.toArray(), this.trx);
+    }
+
+    // multiple
+    _multipleUsers = async ({ next_tracking, current_tracking }) => {
+        // validar permitidos
+        let allow = ['DERIVADO', 'ENVIADO'];
+        if (!this.users.length) return false;
+        if (!allow.includes(this.status)) return false;
+        let boss = Role.query()
+            .where('entity_id', this.entity.id)
+            .where('dependencia_id', this.tracking.dependencia_id)
+            .first();
+        if (!boss) boss = {};
+        // datos reales
+        let payload = collect([]);
+        // filtrar
+        await this.users.map(async u => {
+            payload.push({
+                tramite_id: this.tracking.tramite_id,
+                dependencia_id: current_tracking.dependencia_id,
+                person_id: u.person_id,
+                user_verify_id: u.id,
+                user_id: this.auth.id,
+                tracking_id: next_tracking.tracking_id,
+                multiple_id: current_tracking.id,
+                current: 1,
+                visible: 1,
+                revisado: 1,
+                first: 0,
+                modo: boss.user_id == u.id ? 'DEPENDENCIA' : 'YO',
+                is_action: u.is_action ? 1 : 0,
+                status: u.is_action ? 'RECIBIDO' : 'COPIA'
+            });
         });
         // generar copia
         await Tracking.createMany(payload.toArray(), this.trx);
