@@ -128,6 +128,7 @@ class TimelineController {
         if (!tramite) throw new NotFoundModelException('El trámite');
         // obtener tracking
         let trackings = await Tracking.query()
+            .withCount('multiples')
             .with('tracking')
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .where('tra.slug', tramite.slug)

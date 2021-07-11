@@ -30,8 +30,7 @@ class NextController {
         REGISTRADO: ['ANULADO', 'ENVIADO'],
         SUBTRAMITE: ['ANULADO', 'ENVIADO'],
         PENDIENTE: ['DERIVADO', 'RESPONDIDO', 'FINALIZADO'],
-        RECIBIDO: ['ACEPTADO', 'RECHAZADO'],
-        COPIA: ['ACEPTADO'],
+        RECIBIDO: ['ACEPTADO', 'RECHAZADO']
     };
     hidden = ['REGISTER'];
 
