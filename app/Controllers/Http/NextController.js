@@ -278,7 +278,7 @@ class NextController {
             // crear derivado
             let derivado = await Tracking.create(payload_derivado, this.trx);
             // generar copia
-            await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
+            await this._multiple({ next_tracking: recibido, current_tracking: derivado });
             // guardar cambios
             await this.trx.commit();
             // disabled visible
@@ -292,7 +292,6 @@ class NextController {
             // config tracking
             return derivado;
         } catch (error) {
-            console.log(error);
             // cancelar cambios
             await this._rollbackTracking();
             this.trx.rollback();
@@ -374,7 +373,7 @@ class NextController {
             // crear derivado
             let derivado = await Tracking.create(payload_derivado, this.trx);
             // generar copia
-            await this._multiple({ dependencia_id: request.input('dependencia_detino_id'), current_tracking: derivado });
+            await this._multiple({ next_tracking: recibido, current_tracking: derivado });
             // guardar cambios
             this.trx.commit();
             // disabled visible
@@ -697,7 +696,7 @@ class NextController {
     }
 
     // multiple
-    _multiple = async ({ dependencia_id = '', current_tracking, status_action }) => {
+    _multiple = async ({ next_tracking, current_tracking }) => {
         // validar permitidos
         let allow = ['DERIVADO', 'ENVIADO'];
         if (!this.multiple.length) return false;
@@ -707,7 +706,7 @@ class NextController {
         let roles = Role.query()
             .where('entity_id', this.entity.id);
         // filtrar dependencia
-        if (dependencia_id) roles.whereNotIn('dependencia_id', [dependencia_id])
+        if (next_tracking.dependencia_id) roles.whereNotIn('dependencia_id', [next_tracking.dependencia_id])
         // obtener datos
         roles = await roles.whereIn('dependencia_id', ids)
             .where('level', 'BOSS')
@@ -727,7 +726,8 @@ class NextController {
                     person_id: exists.person_id,
                     user_verify_id: exists.user_id,
                     user_id: this.auth.id,
-                    tracking_id: current_tracking.id,
+                    tracking_id: next_tracking.tracking_id,
+                    multiple_id: current_tracking.id,
                     current: 1,
                     visible: 1,
                     revisado: 1,
@@ -740,9 +740,6 @@ class NextController {
         });
         // generar copia
         await Tracking.createMany(payload.toArray(), this.trx);
-        // activar modo multiple
-        current_tracking.merge({ multiple: 1 });
-        await current_tracking.save(this.trx);
     }
 
     // info

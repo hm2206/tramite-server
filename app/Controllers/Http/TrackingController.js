@@ -75,14 +75,13 @@ class TrackingController {
     multiple = async ({ params, request }) => {
         let { page } = request.all();
         let tracking = await Tracking.query()
-            .where('multiple', 1)
             .where('id', params.id)
             .first();
         // validar tracking
         if (!tracking) throw new NotFoundModelException("El seguimiento");
         // obtener seguimiento multiple
         let multiples = await Tracking.query()
-            .where('tracking_id', tracking.id)
+            .where('multiple_id', tracking.id)
             .paginate(page || 1, 20);
         // parse json
         multiples = await multiples.toJSON();

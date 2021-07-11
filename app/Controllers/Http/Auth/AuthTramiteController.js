@@ -74,6 +74,7 @@ class AuthTramiteController {
         let tracking = await Tracking.query()
             .setHidden([])
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
+            .withCount('multiples')
             .with('verify')
             .with('tracking')
             .with('info', (build) => build.with('files', (buildF) => {
@@ -128,7 +129,6 @@ class AuthTramiteController {
         tracking.tramite.files = await files.where('object_type', 'App/Models/Tramite').where('object_id', tracking.tramite_id).toArray();
         tracking.tramite.code_qr = code_qr;
         // obtener files antiguos
-        let old_files = [];
         let tmpFiles = await File.query()
             .join('tramites as tra', 'tra.id', 'files.object_id')
             .where('files.object_type', 'App/Models/Tramite')
@@ -140,22 +140,11 @@ class AuthTramiteController {
         tmpFiles = await tmpFiles.toJSON();
         // save old_files
         tracking.tramite.old_files = tmpFiles;
-        // obtener enlaces
-        let enlaces = await File.query()
-            .join('infos as i', 'i.id', 'files.object_id')
-            .join('trackings as t', 't.info_id', 'i.id')
-            .where('files.object_type', 'App/Models/Info')
-            .where('t.tramite_id', tracking.tramite_id)
-            .select('files.id', 'files.name', 'files.object_id', 'files.object_type', 'files.extname', 'files.size', 'files.url')
-            .groupBy('files.id', 'files.name', 'files.object_id', 'files.object_type', 'files.extname', 'files.size', 'files.url')
-            .fetch();
-        enlaces = await enlaces.toJSON();
         // response 
         return {
             success: true,
             status: 201,
-            tracking,
-            enlaces: []
+            tracking
         }
     }
 

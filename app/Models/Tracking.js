@@ -48,6 +48,10 @@ class Tracking extends Model {
     info = () => {
         return this.belongsTo('App/Models/Info');
     }
+
+    multiples () {
+        return this.hasMany('App/Models/Tracking', 'id', 'multiple_id');
+    }
 }
 
 module.exports = Tracking
