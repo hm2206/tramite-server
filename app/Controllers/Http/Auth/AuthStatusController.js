@@ -22,6 +22,7 @@ class AuthStatusController {
                 .where('tra.status', allow)
                 .whereIn('tra.modo', modo == 'YO' ? ['YO', 'DEPENDENCIA'] : ['DEPENDENCIA'])
                 .whereNull('tra.readed_at')
+                .where('tra.visible', 1)
                 .select(DB.raw(`count(tra.status)`))
             // validar yo
             if (modo == 'YO') raw_status.where('tra.user_verify_id', auth.id)
@@ -41,6 +42,7 @@ class AuthStatusController {
             .where('tra.dependencia_id', dependencia.id)
             .whereIn('tra.status', allow_status)
             .whereNull('tra.readed_at')
+            .where('tra.visible', 1)
             .where('tra.archived', 1)
             .select(DB.raw(`count(tra.status) as ARCHIVED`));
             // find status
