@@ -541,7 +541,7 @@ class NextController {
         };
         // obtener jefe del area del documento
         let boss_origen = await this._getBoss(this.tracking.dependencia_id);
-        let boss_destino = await this._getBoss(payload_pendiente.dependencia_id);
+        let boss_destino = await this._getBoss(payload_pendiente.dependencia_id), payload_pendiente;
         if (boss_destino.user_id == payload_pendiente.user_verify_id) payload_pendiente.modo = 'DEPENDENCIA';
         // generar payload rechazado
         let payload_rechazado = Object.assign({}, payload_pendiente);
