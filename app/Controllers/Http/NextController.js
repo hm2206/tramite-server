@@ -140,7 +140,14 @@ class NextController {
     }
 
     // obtener al boss
-    _getBoss = async (dependencia_id) => {
+    _getBoss = async (dependencia_id, externo = {}) => {
+        if (!dependencia_id) return {
+            dependencia_id: externo.dependencia_id,
+            person_id: externo.person_id,
+            user_id: externo.user_id,
+            level: 'BOSS',
+            state: 1
+        }
         let boss = await Role.query()
             .where('dependencia_id', dependencia_id)
             .where('entity_id', this.entity.id)
@@ -148,7 +155,7 @@ class NextController {
             .where('state', 1)
             .first();
         if (!boss) throw new NotFoundModelException("Al jefe");
-        return boss;
+        return boss; 
     }
 
     // manejador
@@ -456,7 +463,7 @@ class NextController {
         };
         // obtener jefe del area del documento
         let boss_origen = await this._getBoss(this.tracking.dependencia_id);
-        let boss_destino = await this._getBoss(payload_aceptado.dependencia_id);
+        let boss_destino = await this._getBoss(payload_aceptado.dependencia_id, payload_aceptado);
         if (boss_destino.user_id == payload_aceptado.user_verify_id) payload_aceptado.modo = 'DEPENDENCIA';
         // generar payload pendiente
         let payload_pendiente = Object.assign({}, payload_aceptado);
