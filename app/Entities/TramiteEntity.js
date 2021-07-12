@@ -13,6 +13,7 @@ const DBException = require('../Exceptions/DBException');
 const FileEntity = require('../Entities/FileEntity');
 const { collect } = require('collect.js');
 const { PDFDocument } = require('pdf-lib');
+const moment = require('moment');
 
 class TramiteEntity {
 
@@ -178,19 +179,19 @@ class TramiteEntity {
             // preparar tracking
             let payload_tracking = {
                 tramite_id: tramite.id,
-                dependencia_id: datos.dependencia_id,
+                dependencia_id: isAuth ? datos.dependencia_id : null,
                 person_id: tramite.person_id,
                 user_id: isAuth ? auth.id : null,
                 user_verify_id: isAuth ? auth.id : null,
-                current: 1,
+                current: isAuth ? 1 : 0,
                 alert: 0,
                 revisado: isAuth ? 0 : 1,
-                status: isAuth ? 'REGISTRADO' : 'RECIBIDO',
+                status: isAuth ? 'REGISTRADO' : 'ENVIADO',
                 modo: self_remitente ? 'YO' : 'DEPENDENCIA',
                 first: 1,
                 tracking_id: null,
                 next: tramite.tramite_parent_id ? next : null,
-                readed_at: null
+                readed_at: isAuth ? null : moment().format('YYYY-MM-DD HH:mm:ss')
             };
             // validar next tracking
             let allow = ['RESPONDIDO'];
@@ -221,6 +222,20 @@ class TramiteEntity {
             }
             // crear tracking
             let tracking = await Tracking.create(payload_tracking, trx);
+            // validar si el trámite viene desde afuera
+            if (!tracking.dependencia_id) {
+                let payload_recibido = Object.assign({}, payload_tracking);
+                payload_recibido.person_id = boss.person_id;
+                payload_recibido.user_verify_id = boss.user_id;
+                payload_recibido.dependencia_id = datos.dependencia_id;
+                payload_recibido.readed_at = null;
+                payload_recibido.status = 'RECIBIDO';
+                payload_recibido.first = 0;
+                payload_recibido.tracking_id = tracking.id;
+                payload_recibido.current = 1;
+                // crear recibido
+                await Tracking.create(payload_recibido, trx);
+            }
             // guardar archivos
             const fileEntity = new FileEntity();
             let files = await fileEntity.store(request, { 
