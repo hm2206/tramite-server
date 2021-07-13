@@ -1,19 +1,7 @@
 'use strict'
 
 const NextEntity = require('../../Entities/NextEntity');
-const Tracking = use('App/Models/Tracking');
-const Tramite = use('App/Models/Tramite');
-const Role = use('App/Models/Role');
-const { validation, ValidatorError } = require('validator-error-adonis');
-const CustomException = require('../../Exceptions/CustomException');
-const FileController = require('./FileController');
-const moment = require('moment');
-const NotFoundModelException = require('../../Exceptions/NotFoundModelException');
-const { collect } = require('collect.js');
-const Info = use('App/Models/Info');
-const DB = use('Database');
-const File = use('App/Models/File');
-const Drive = use('Drive');
+const { validation } = require('validator-error-adonis');
 
 class NextController {
 

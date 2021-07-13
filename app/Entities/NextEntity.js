@@ -150,7 +150,7 @@ class NextEntity {
                     extnames: ['PDF', 'pdf', 'doc', 'DOC', 'docx', 'DOCX', 'zip', 'ZIP', 'rar', 'RAR']
                 }
                 // guardar archivos
-                await apiFile.store(this.request, infoFile, this.tramite.slug, this.trx);
+                await apiFile.store(this.request, infoFile, `tramite/${this.tramite.slug}/info`, this.trx);
             }
             return typeof callback == 'function' ? callback(info) : info;
         }
