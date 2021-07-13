@@ -19,7 +19,7 @@ class NextEntity {
     status = "";
     entity_id = "";
     dependencia_id = "";
-    user_id = "";
+    user_id = null;
     tramite = {};
     tracking = {};
     tracking_origen = {};
@@ -79,7 +79,7 @@ class NextEntity {
         let tracking = await Tracking.query()
             .join('tramites as tra', 'tra.id', 'trackings.tramite_id')
             .where('tra.entity_id', this.entity_id)
-            .where('trackings.dependencia_id', this.dependencia_id)
+            .where('trackings.dependencia_id', this.is_externo ? null : this.dependencia_id)
             .where('trackings.id', id)
             .where('trackings.current', 1)
             .orderBy('trackings.id', 'DESC')
@@ -138,7 +138,7 @@ class NextEntity {
 
     async generateInfo({ onlyDescription = true }, callback = null) {
         let description = this.body.description || '';
-        let files = this.request.file('files');
+        let files = this.request ? this.request.file('files') : null;
         if ((!onlyDescription && (files || description)) || (onlyDescription && description)) {
             let info = await Info.create({ description }, this.trx);
             // processar archivos
@@ -340,7 +340,7 @@ class NextEntity {
             dependencia_id: this.body.dependencia_destino_id,
             person_id: null,
             user_verify_id: null,
-            user_id: this.user_id,
+            user_id: this.user_id || null,
             tracking_id: this.tracking.id,
             revisado: 1,
             visible: 1,
@@ -354,7 +354,13 @@ class NextEntity {
         this.destino_boss = await this.getRole(payload_recibido.dependencia_id, 'BOSS');
         // verificar que el tramite va a otra oficina
         if (!this.is_privated) {
-            this.current_user = await this.getUser(this.destino_boss.user_id)
+            if (this.is_externo) {
+                this.current_user = this.destino_boss;
+                this.current_user.id = this.destino_boss.user_id;
+            } else {
+                this.current_user = await this.getUser(this.destino_boss.user_id);
+            }
+            // add
             payload_recibido.user_verify_id = this.current_user.id;
             payload_recibido.modo = 'DEPENDENCIA';
             payload_recibido.person_id = this.current_user.person_id;
@@ -490,7 +496,7 @@ class NextEntity {
             dependencia_id: this.tracking_origen.dependencia_id,
             person_id: this.tracking_origen.person_id,
             user_verify_id: this.tracking_origen.user_verify_id,
-            user_id: this.user_id,
+            user_id: this.user_id || null,
             tracking_id: this.tracking.id,
             revisado: 1,
             visible: this.tracking_origen.first ? 0 : 1,
@@ -502,7 +508,7 @@ class NextEntity {
         };
         // obtener jefe del area del documento
         this.destino_boss = await this.getRole(payload_aceptado.dependencia_id, 'BOSS');
-        payload_aceptado.modo = await this.isModoBoss(this.destino_boss, payload_aceptado);
+        payload_aceptado.modo = this.tracking_origen.dependencia_id ? await this.isModoBoss(this.destino_boss, payload_aceptado) : 'DEPENDENCIA';
         // generar payload pendiente
         let payload_pendiente = Object.assign({}, payload_aceptado);
         // procesar datos
@@ -576,7 +582,7 @@ class NextEntity {
         };
         // obtener jefe del area del documento
         this.destino_boss = await this.getRole(payload_pendiente.dependencia_id, 'BOSS');
-        payload_pendiente.modo = await this.isModoBoss(this.destino_boss, payload_pendiente);
+        payload_pendiente.modo = this.tracking_origen.dependencia_id ? await this.isModoBoss(this.destino_boss, payload_pendiente) : 'DEPENDENCIA';
         // generar payload rechazado
         let payload_rechazado = Object.assign({}, payload_pendiente);
         // procesar tracking
@@ -588,7 +594,6 @@ class NextEntity {
             });
             // crear pendiente
             let pendiente = await Tracking.create(payload_pendiente, this.trx);
-            console.log(pendiente);
             // obtener rechazado
             payload_rechazado.dependencia_id = this.tracking.dependencia_id;
             payload_rechazado.person_id = this.tracking.person_id;

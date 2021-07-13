@@ -14,7 +14,7 @@ const FileEntity = require('../Entities/FileEntity');
 const { collect } = require('collect.js');
 const { PDFDocument } = require('pdf-lib');
 const moment = require('moment');
-const NextController = require('../Controllers/Http/NextController');
+const NextEntity = require('./NextEntity');
 
 class TramiteEntity {
 
@@ -231,7 +231,7 @@ class TramiteEntity {
                 extnames: ['pdf', 'docx', 'doc', 'zip', 'rar', 'DOCX', 'DOC', 'PDF', 'ZIP', 'RAR']
             }, `/tramite/${slug}`, trx);
             // guardar transacción
-            trx.commit();
+            await trx.commit();
             // obtener folio
             let folio_count = await this.generateFolio(tramite, files);
             if (folio_count) {
@@ -243,10 +243,17 @@ class TramiteEntity {
             tramite.person = person;
             tramite.files = files;
             // validar si el trámite viene desde afuera
+            if (!tramite.dependencia_origen_id) {
+                let authentication = request.api_authentication;
+                const nextEntity = new NextEntity(authentication, datos.entity_id, datos.dependencia_id)
+                nextEntity.setIsAction(1);
+                nextEntity.setIsExterno(true);
+                await nextEntity.execute(tracking.id, 'ENVIADO', { dependencia_destino_id: datos.dependencia_id })
+            }
             // response
             return JSON.parse(JSON.stringify(tramite));
         } catch (error) {
-            trx.rollback();
+            await trx.rollback();
             throw new DBException(error, "regístro");
         }
     }
