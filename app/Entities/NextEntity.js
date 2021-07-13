@@ -499,7 +499,7 @@ class NextEntity {
             user_id: this.user_id || null,
             tracking_id: this.tracking.id,
             revisado: 1,
-            visible: this.tracking_origen.first ? 0 : 1,
+            visible: 1,
             info_id: this.tracking.info_id,
             current: 0,
             first: 0,
