@@ -243,10 +243,6 @@ class TramiteEntity {
             tramite.person = person;
             tramite.files = files;
             // validar si el trámite viene desde afuera
-            // if (!tracking.dependencia_id) {
-            //     const nextController = new NextController();
-            //     await nextController.handle()
-            // }
             // response
             return JSON.parse(JSON.stringify(tramite));
         } catch (error) {
