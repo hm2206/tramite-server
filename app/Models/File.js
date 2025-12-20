@@ -2,8 +2,7 @@
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model');
-const { URL } = require('../../utils');
-const roundTo = require('round-to');
+const { URL, roundTo } = require('../../utils');
 
 class File extends Model {
 
